@@ -17,7 +17,7 @@ import type { LayoutTela } from "./use-layout";
 export type ItemDoBloco = { id: string; titulo: string; node: ReactNode };
 
 /** Largura mínima de um KPI (px): define quantas colunas internas cabem no bloco. */
-const LARGURA_MINIMA = 200;
+const LARGURA_MINIMA = 180;
 const GAP = 10;
 
 /**
@@ -25,10 +25,12 @@ const GAP = 10;
  * que é secundário (`data-altura` no bloco; ver `KpiCard`), em vez de o
  * conteúdo vazar para o card de baixo.
  */
-const ALTURA_NORMAL = 86;
+/** Cabe o valor com duas linhas de comparação; abaixo, só os KPIs de uma linha mostram a comparação (`media`). */
+const ALTURA_NORMAL = 104;
+const ALTURA_MEDIA = 86;
 const ALTURA_BAIXA = 74;
 
-export type AlturaItem = "normal" | "baixa" | "minima";
+export type AlturaItem = "normal" | "media" | "baixa" | "minima";
 
 function ItemKpi({
   item,
@@ -196,14 +198,22 @@ export function BlocoKpis({
   const linhas = linhasOcupadas(visiveis, colunas);
   // Só na grade (altura fixa): empilhado, o bloco cresce com o conteúdo.
   const alturaItem = grade.larga && medida.altura ? (medida.altura - (linhas - 1) * GAP) / linhas : Infinity;
-  const altura: AlturaItem = alturaItem >= ALTURA_NORMAL ? "normal" : alturaItem >= ALTURA_BAIXA ? "baixa" : "minima";
+  const altura: AlturaItem = alturaItem >= ALTURA_NORMAL
+      ? "normal"
+      : alturaItem >= ALTURA_MEDIA
+        ? "media"
+        : alturaItem >= ALTURA_BAIXA
+          ? "baixa"
+          : "minima";
 
   return (
-    // As linhas internas dividem a altura do card da grade; abaixo de 2,25rem por KPI, o bloco rola.
+    // Na grade, as linhas internas dividem a altura do card (abaixo de 2,25rem por KPI, o bloco rola). Empilhado
+    // (telas estreitas) o card não tem altura fixa: cada linha tem a altura do conteúdo, no mínimo 5,5rem; com 2,25rem
+    // os textos do KPI ficavam um por cima do outro.
     <div
       ref={ref}
       data-altura={altura}
-      className="grid auto-rows-[minmax(2.25rem,1fr)] gap-2.5 overflow-y-auto!"
+      className={`grid gap-2.5 overflow-y-auto! ${grade.larga ? "auto-rows-[minmax(2.25rem,1fr)]" : "auto-rows-[minmax(5.5rem,auto)]"}`}
       style={{ gridTemplateColumns: `repeat(${colunas}, minmax(0, 1fr))` }}
     >
       {visiveis.map((item, index) => {

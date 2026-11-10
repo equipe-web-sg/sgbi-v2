@@ -166,6 +166,7 @@ export function kpisDoPainel({
       node: (
         <KpiCard
           titulo="Despesas Operacionais"
+          linhasLongas
           ajuda="Soma das despesas lançadas no período (tabela despesa)."
           icone={mdiOfficeBuildingOutline}
           tom="blue"
@@ -205,6 +206,7 @@ export function kpisDoPainel({
       node: (
         <KpiCard
           titulo="Resultado Operacional"
+          linhasLongas
           ajuda="Lucro bruto menos as despesas operacionais."
           icone={mdiFinance}
           tom="purple"
@@ -331,6 +333,7 @@ export function kpisDoPainel({
       node: (
         <KpiCard
           titulo="Cancelamentos"
+          linhasLongas
           ajuda="Valor cancelado no PDV (tabela cancelamentos), sobre a venda do PDV."
           icone={mdiCartRemove}
           tom="coral"

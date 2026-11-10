@@ -31,7 +31,7 @@ import type { LayoutTela } from "./use-layout";
 /** Espaço entre cards (gap-2.5). */
 export const GAP = 10;
 /** Altura mínima de uma unidade de linha (px): em telas baixas a página rola. */
-const UNIDADE_MINIMA = 30;
+const UNIDADE_MINIMA = 34;
 /** Unidade fixa abaixo de `xl` (cards empilhados). */
 const UNIDADE_EMPILHADA = 40;
 /** Padding inferior da página. */
@@ -132,7 +132,7 @@ function CardDaGrade({
   const travar = editando && !bloco;
   const { ref, handleRef, isDragging } = useDraggable({ id: item.id, type: "card", disabled: !editando });
   const elRef = useRef<HTMLDivElement | null>(null);
-  const inicio = useRef<{ x: number; y: number; w: number; h: number; ret: DOMRect } | null>(null);
+  const inicio = useRef<{ x: number; y: number; w: number; h: number; ret: { width: number; height: number } } | null>(null);
   const [aoVivo, setAoVivo] = useState<AoVivo | null>(null);
   // Deslocamento encaixado (colunas e linhas) do redimensionamento em andamento, aplicado ao soltar.
   const alvo = useRef<{ colunas: number; linhas: number } | null>(null);
@@ -154,7 +154,8 @@ function CardDaGrade({
   const alturaCard = alturaPx(item.h, unidade);
 
   const iniciar = (borda: Borda) => {
-    const ret = elRef.current!.getBoundingClientRect();
+    // offsetWidth/Height ignoram transformações: no meio da animação de layout o card está com escala.
+    const ret = { width: elRef.current!.offsetWidth, height: elRef.current!.offsetHeight };
     inicio.current = { x: item.x, y: item.y, w: item.w, h: item.h, ret };
     setAoVivo({
       largura: ret.width,
@@ -188,7 +189,7 @@ function CardDaGrade({
   // O card acompanha o ponteiro em px (dentro dos limites); a grade encaixa na coluna/linha mais próxima.
   const mover = (borda: Borda) => (dx: number, dy: number) => {
     const i = inicio.current;
-    if (!i) return;
+    if (!i || coluna <= 0) return;
     const px = (w: number) => w * coluna + (w - 1) * GAP;
     // Até a borda da grade: pela esquerda, até a coluna 0; pela direita, até a 12.
     const maxW = borda.includes("l")
@@ -231,7 +232,7 @@ function CardDaGrade({
       transition={MOLA}
       data-card={item.id}
       style={posicaoNaGrade(item)}
-      className={`relative min-h-0 min-w-0 ${isDragging ? "z-40" : aoVivo ? "z-30" : "z-10"}`}
+      className={`relative min-h-0 min-w-0 ${isDragging ? "z-40" : aoVivo ? "z-[45]" : "z-10"}`}
     >
       <div
         className={`h-full rounded-2xl transition-[box-shadow,scale] duration-300 ${isDragging ? "scale-[1.015] shadow-2xl" : ""}`}
@@ -322,7 +323,7 @@ function CardDaGrade({
             ...(aoVivo.ancoraDireita ? { right: 0 } : { left: 0 }),
             ...(aoVivo.ancoraBaixo ? { bottom: 0 } : { top: 0 }),
           }}
-          className="pointer-events-none absolute z-20 rounded-2xl border border-primary/70 bg-primary/20"
+          className="pointer-events-none absolute z-50 rounded-2xl border border-primary/70 bg-primary/20"
         />
       )}
     </motion.div>

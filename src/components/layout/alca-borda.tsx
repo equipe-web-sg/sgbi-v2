@@ -37,6 +37,9 @@ const MARCA: Record<Borda, string> = {
   br: "size-2.5",
 };
 
+/** Encerra o arraste de redimensionar em andamento (só existe um por vez, na página inteira). */
+let encerrarAtivo: (() => void) | null = null;
+
 /**
  * Alça de redimensionar numa borda ou canto do card: arrastar chama `aoMover`
  * com o deslocamento do ponteiro (px) desde o início; o card decide o encaixe.
@@ -73,27 +76,59 @@ export function AlcaBorda({
   useEffect(() => {
     const alvo = ref.current;
     if (!alvo) return;
+    // Arraste desta alça em andamento (encerrado se a alça sair da tela no meio dele).
+    let meu: (() => void) | null = null;
     const iniciar = (e: PointerEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || !e.isPrimary) return;
       e.preventDefault();
       e.stopPropagation();
-      const { clientX: x0, clientY: y0 } = e;
+      // Um arraste por vez: se o anterior não terminou (soltar fora da janela, por exemplo), encerra antes.
+      encerrarAtivo?.();
+      const { clientX: x0, clientY: y0, pointerId } = e;
       acoes.current.aoIniciar?.();
-      const mover = (ev: PointerEvent) => acoes.current.aoMover(ev.clientX - x0, ev.clientY - y0);
+      // Com o ponteiro capturado, o pointerup chega mesmo fora da janela. Em eventos sintéticos falha: sem problema.
+      try {
+        alvo.setPointerCapture(pointerId);
+      } catch {}
+      const mover = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        // Botão já solto sem o pointerup ter chegado (soltou fora da janela, trocou de aba): encerra, e
+        // não deixa um arraste "fantasma" seguindo o ponteiro.
+        if (ev.buttons === 0 && ev.pointerType === "mouse") return soltar();
+        acoes.current.aoMover(ev.clientX - x0, ev.clientY - y0);
+      };
+      const fim = (ev: Event) => {
+        if (ev instanceof PointerEvent && ev.pointerId !== pointerId) return;
+        soltar();
+      };
       const soltar = () => {
         window.removeEventListener("pointermove", mover);
-        window.removeEventListener("pointerup", soltar);
-        window.removeEventListener("pointercancel", soltar);
+        window.removeEventListener("pointerup", fim);
+        window.removeEventListener("pointercancel", fim);
+        window.removeEventListener("blur", soltar);
+        alvo.removeEventListener("lostpointercapture", fim);
         document.body.style.removeProperty("cursor");
+        try {
+          alvo.releasePointerCapture(pointerId);
+        } catch {}
+        if (encerrarAtivo === soltar) encerrarAtivo = null;
+        meu = null;
         acoes.current.aoSoltar?.();
       };
+      encerrarAtivo = soltar;
+      meu = soltar;
       document.body.style.cursor = CURSOR[borda];
       window.addEventListener("pointermove", mover);
-      window.addEventListener("pointerup", soltar);
-      window.addEventListener("pointercancel", soltar);
+      window.addEventListener("pointerup", fim);
+      window.addEventListener("pointercancel", fim);
+      window.addEventListener("blur", soltar);
+      alvo.addEventListener("lostpointercapture", fim);
     };
     alvo.addEventListener("pointerdown", iniciar);
-    return () => alvo.removeEventListener("pointerdown", iniciar);
+    return () => {
+      alvo.removeEventListener("pointerdown", iniciar);
+      meu?.();
+    };
   }, [borda]);
 
   const teclar = (e: KeyboardEvent) => {

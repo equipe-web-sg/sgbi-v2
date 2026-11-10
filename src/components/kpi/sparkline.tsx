@@ -13,12 +13,10 @@ import {
   YAxis,
 } from "recharts";
 import { propsEixoX, propsEixoY, propsGrade } from "@/components/charts/estilo";
-import { ExpandirGrafico } from "@/components/charts/expandir-grafico";
-import { LegendaGrafico } from "@/components/charts/legenda-grafico";
 import { formatDiaMes, formatMoeda, formatMoedaCompacta } from "@/lib/format";
 
-type Ponto = { data: string; valor: number | null };
-type Tipo = "bar" | "area";
+export type Ponto = { data: string; valor: number | null };
+export type Tipo = "bar" | "area";
 
 function tooltipSerie(kind: Tipo, format: (value: number) => string) {
   return (
@@ -40,8 +38,8 @@ function tooltipSerie(kind: Tipo, format: (value: number) => string) {
   );
 }
 
-/** Série diária com eixos, grade e valores, para a janela ampliada do minigráfico. */
-function SerieDetalhada({
+/** Série diária com eixos, grade e valores, para a janela de detalhe do KPI (`KpiCard`). */
+export function SerieDetalhada({
   data,
   kind,
   color,
@@ -90,38 +88,30 @@ function SerieDetalhada({
   );
 }
 
-/**
- * Minigráfico diário do card de KPI, com tooltip por dia. Clicar nele abre a
- * série numa janela, com eixos de datas e valores (no minigráfico não dá para
- * ler os eixos).
- */
-export function Sparkline({
-  data,
-  kind,
-  color,
-  format,
-  formatEixo,
-  label,
-}: {
+export type SparklineProps = {
   data: Ponto[];
   kind: Tipo;
   color: string;
   format: (value: number) => string;
-  /** Rótulos do eixo Y da janela ampliada (padrão: `format`; valores em R$ usam a forma compacta). */
+  /** Rótulos do eixo Y da janela de detalhe (padrão: `format`; valores em R$ usam a forma compacta). */
   formatEixo?: (value: number) => string;
   label: string;
-}) {
+};
+
+/** Eixo Y da janela de detalhe de um KPI (valores em R$ usam a forma compacta). */
+export const eixoDoSparkline = ({ format, formatEixo }: Pick<SparklineProps, "format" | "formatEixo">) =>
+  formatEixo ?? (format === formatMoeda ? formatMoedaCompacta : format);
+
+/**
+ * Minigráfico diário do card de KPI, com tooltip por dia. Clicar não o amplia:
+ * o card inteiro abre a janela de detalhe (valor e série com eixos), ver
+ * `KpiCard`, que lê as propriedades deste elemento.
+ */
+export function Sparkline({ data, kind, color, format, label }: SparklineProps) {
   if (!data.some((p) => p.valor != null)) return null;
-  const eixo = formatEixo ?? (format === formatMoeda ? formatMoedaCompacta : format);
 
   return (
-    <ExpandirGrafico
-      className="h-9 w-12 shrink-0 @[14rem]:w-14 @[16rem]:w-20"
-      titulo={label}
-      descricao="Evolução diária no período."
-      legenda={<LegendaGrafico grande itens={[{ nome: label, cor: color, forma: kind === "bar" ? "quadrado" : "linha" }]} />}
-      detalhe={<SerieDetalhada data={data} kind={kind} color={color} format={format} formatEixo={eixo} />}
-    >
+    <div className="h-9 w-12 shrink-0 @[20rem]:w-20">
       <div className="size-full" role="img" aria-label={`${label}: evolução diária`}>
         <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
           {kind === "bar" ? (
@@ -148,6 +138,6 @@ export function Sparkline({
           )}
         </ResponsiveContainer>
       </div>
-    </ExpandirGrafico>
+    </div>
   );
 }
