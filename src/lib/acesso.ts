@@ -95,6 +95,18 @@ export function bloqueio(acesso: Acesso, chave: string, fontes: readonly Fonte[]
 
 export const bloqueioDaTela = (acesso: Acesso, tela: Tela) => bloqueio(acesso, tela, TELAS[tela].fontes);
 
+/**
+ * O banco do BI ainda não recebeu nenhuma carga do headquarter: nenhuma filial com
+ * movimento. As telas que leem dados do banco (as que têm `fontes` em `TELAS`, não a
+ * DFC) só consultam com ao menos uma filial, então sem isso ficariam carregando para
+ * sempre. `undefined` = a lista ainda não chegou (não é "sem dados").
+ */
+export const bancoSemDados = (resposta: { filiais: readonly unknown[] } | undefined) =>
+  resposta !== undefined && resposta.filiais.length === 0;
+
+/** A tela consulta dados do banco do BI (a DFC, sem fonte de dados, não). */
+export const telaLeDoBanco = (tela: Tela) => TELAS[tela].fontes.length > 0;
+
 /** Só a plataforma (para habilitar consultas: a permissão por card esconde o card, e a rota checa de novo). */
 export const temFontes = (acesso: Acesso, fontes: readonly Fonte[]) =>
   fontesAusentes(acesso.plataforma, fontes).length === 0;

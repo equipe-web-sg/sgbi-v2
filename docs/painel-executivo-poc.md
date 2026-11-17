@@ -155,7 +155,7 @@ Limitações conhecidas:
 - A lista de filiais vem da analise gerencial; a filial 3 (só no `parfil`) não aparece.
 - A tabela troca de nível pelas abas, mas ainda não expande um departamento em seus grupos.
 - Não há dados do dia (`API_VIEW`); a tela usa só dias fechados.
-- `PERIODO_PADRAO` está fixo em julho/2026 por causa da homologação.
+- O período padrão (`periodoPadrao()`, `src/lib/config.ts`) é o mês atual inteiro, pelo relógio do navegador (17/11/2026; antes ficava fixo em julho/2026 por causa da homologação). Metas e Financeiro abrem no mês do último dia com venda.
 
 ## 9. Layout personalizável (06/11/2026, D43)
 

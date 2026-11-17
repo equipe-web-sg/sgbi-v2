@@ -1,0 +1,19 @@
+version: '3'
+services:
+  mysql-server:
+    image: mysql:5.7
+    restart: always
+    container_name: mysql-sgbi
+    command: --lower_case_table_names=1 --sql-mode=""
+    ports:
+      - {{MYSQL_PORT}}:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: {{MYSQL_ROOT_PASSWORD}}
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -uroot --password=$$MYSQL_ROOT_PASSWORD
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/my.cnf

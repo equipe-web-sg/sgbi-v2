@@ -21,7 +21,7 @@ import {
   vendaDoIntervalo,
 } from "../compute";
 import { periodoComparacao } from "@/lib/date";
-import { PERIODO_PADRAO } from "../config";
+import { periodoPadrao } from "../config";
 import { formatData, formatMoedaCompacta, formatMoeda, formatPercentual } from "@/lib/format";
 import { painelQueries } from "../queries";
 import type { Filtros } from "../types";
@@ -38,13 +38,13 @@ type FiltrosEstado = Omit<Filtros, "filiais"> & { filiais: number[] | null };
 
 export function PainelExecutivo() {
   const filiaisQuery = useQuery(painelQueries.filiais());
-  const [estado, setEstado] = useState<FiltrosEstado>({
-    periodo: PERIODO_PADRAO,
+  const [estado, setEstado] = useState<FiltrosEstado>(() => ({
+    periodo: periodoPadrao(),
     comparacao: { tipo: "periodo-anterior" },
     // null = todas as filiais com movimento (resolvido quando a lista chega).
     filiais: null,
     origem: "todos",
-  });
+  }));
 
   const filtros: Filtros = useMemo(
     () => ({

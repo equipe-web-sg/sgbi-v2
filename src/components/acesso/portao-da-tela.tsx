@@ -1,11 +1,19 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiDatabaseOffOutline, mdiLockOutline } from "@mdi/js";
+import { mdiDatabaseClockOutline, mdiDatabaseOffOutline, mdiLockOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { Spinner } from "@/components/ui/spinner";
-import { bloqueioDaTela, detalheDoBloqueio, TELAS, tituloDoBloqueio, type Tela } from "@/lib/acesso";
+import {
+  bancoSemDados,
+  bloqueioDaTela,
+  detalheDoBloqueio,
+  TELAS,
+  telaLeDoBanco,
+  tituloDoBloqueio,
+  type Tela,
+} from "@/lib/acesso";
 import { filiaisQuery, sessaoQuery } from "@/lib/api";
 import { ContextoAcesso } from "./contexto";
 
@@ -13,12 +21,14 @@ import { ContextoAcesso } from "./contexto";
  * Entrada de cada tela (D46): espera o acesso do usuário (plataforma e
  * permissões), mostra só o aviso quando a tela inteira está indisponível e
  * disponibiliza o acesso para os cards (`useAcesso`). Assim nenhuma consulta
- * sai antes de se saber o que a plataforma tem.
+ * sai antes de se saber o que a plataforma tem. Também avisa quando o banco ainda
+ * não recebeu nenhuma carga (sem filiais com movimento), no lugar de deixar os
+ * cards carregando para sempre.
  */
 export function PortaoDaTela({ tela, children }: { tela: Tela; children: ReactNode }) {
   const sessao = useQuery(sessaoQuery());
   // Em paralelo: a lista de filiais é a primeira consulta de toda tela.
-  useQuery(filiaisQuery());
+  const filiais = useQuery(filiaisQuery());
 
   if (!sessao.data) {
     return (
@@ -48,6 +58,20 @@ export function PortaoDaTela({ tela, children }: { tela: Tela; children: ReactNo
         <h1 className="text-lg font-semibold">{TELAS[tela].rotulo}</h1>
         <p className="text-sm font-medium text-muted-foreground">{tituloDoBloqueio(bloqueio)}</p>
         <p className="max-w-md text-sm text-muted-foreground">{detalheDoBloqueio(bloqueio)}</p>
+      </div>
+    );
+  }
+
+  if (telaLeDoBanco(tela) && bancoSemDados(filiais.data)) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24 text-center">
+        <Icon path={mdiDatabaseClockOutline} size={1.4} className="text-muted-foreground" aria-hidden />
+        <h1 className="text-lg font-semibold">{TELAS[tela].rotulo}</h1>
+        <p className="text-sm font-medium text-muted-foreground">Ainda não há dados no banco do BI</p>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Os dados são carregados pelo headquarter, geralmente à noite. Numa instalação nova, a primeira carga só
+          acontece depois que o headquarter for configurado para este banco. Se esse prazo já passou, avise o suporte.
+        </p>
       </div>
     );
   }
