@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:docker": "node scripts/build-docker.mjs",
     "lint": "eslint",
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
+    "db:migrar": "node --env-file=.env.local scripts/migrar.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

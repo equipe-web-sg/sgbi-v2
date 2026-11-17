@@ -1,0 +1,17 @@
+# O contexto do build vira camada da imagem, que todos os clientes baixam: nada de
+# credenciais (.env.local tem as de homologação), histórico ou arquivos de trabalho.
+.env*
+.git
+.gitignore
+.claude
+.next
+node_modules
+docs
+coverage
+*.tsbuildinfo
+npm-debug.log*
+.DS_Store
+Dockerfile
+.dockerignore
+installer
+scripts/build-docker.mjs
