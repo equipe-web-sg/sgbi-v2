@@ -34,6 +34,12 @@ export function lastDayOfMonth(iso: string): string {
   return `${iso.slice(0, 7)}-${String(daysInMonth(iso)).padStart(2, "0")}`;
 }
 
+/** Mês inteiro (do dia 1 ao último) da data `hoje`, pelo relógio local de quem a informa. */
+export function periodoDoMes(hoje: Date): Periodo {
+  const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-01`;
+  return { inicio, fim: lastDayOfMonth(inicio) };
+}
+
 /** Todos os dias de `inicio` a `fim`, inclusive. */
 export function eachDay({ inicio, fim }: Periodo): string[] {
   const days: string[] = [];

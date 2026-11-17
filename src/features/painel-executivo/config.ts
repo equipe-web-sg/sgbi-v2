@@ -22,4 +22,4 @@ export const PAINEL_CONFIG = {
   },
 } as const;
 
-export { PERIODO_PADRAO } from "@/lib/config";
+export { periodoPadrao } from "@/lib/config";

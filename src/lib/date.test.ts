@@ -8,6 +8,7 @@ import {
   lastDayOfMonth,
   mesesDoPeriodo,
   periodoComparacao,
+  periodoDoMes,
   resolverAtalhoComparacao,
   startOfWeek,
 } from "./date";
@@ -138,5 +139,24 @@ describe("período de comparação", () => {
     const escolhido = { inicio: "2026-01-05", fim: "2026-01-10" };
     expect(periodoComparacao(periodo, { tipo: "personalizado", periodo: escolhido })).toEqual(escolhido);
     expect(periodoComparacao(periodo, { tipo: "mes-anterior" })).toEqual({ inicio: "2026-10-01", fim: "2026-10-31" });
+  });
+});
+
+describe("periodoDoMes (período padrão das telas)", () => {
+  it("é o mês inteiro da data, do dia 1 ao último dia", () => {
+    expect(periodoDoMes(new Date(2026, 10, 17))).toEqual({ inicio: "2026-11-01", fim: "2026-11-30" });
+    expect(periodoDoMes(new Date(2026, 6, 5))).toEqual({ inicio: "2026-07-01", fim: "2026-07-31" });
+  });
+
+  it("vale em qualquer dia do mês, inclusive o primeiro e o último", () => {
+    expect(periodoDoMes(new Date(2026, 10, 1))).toEqual({ inicio: "2026-11-01", fim: "2026-11-30" });
+    expect(periodoDoMes(new Date(2026, 10, 30, 23, 59))).toEqual({ inicio: "2026-11-01", fim: "2026-11-30" });
+  });
+
+  it("fevereiro, bissexto e virada de ano", () => {
+    expect(periodoDoMes(new Date(2026, 1, 10))).toEqual({ inicio: "2026-02-01", fim: "2026-02-28" });
+    expect(periodoDoMes(new Date(2028, 1, 10))).toEqual({ inicio: "2028-02-01", fim: "2028-02-29" });
+    expect(periodoDoMes(new Date(2026, 11, 31))).toEqual({ inicio: "2026-12-01", fim: "2026-12-31" });
+    expect(periodoDoMes(new Date(2027, 0, 1))).toEqual({ inicio: "2027-01-01", fim: "2027-01-31" });
   });
 });

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  bancoSemDados,
   bloqueio,
   bloqueioDaTela,
   detalheDoBloqueio,
   listaDeFontes,
   normalizarPlataforma,
   permitido,
+  telaLeDoBanco,
   temFontes,
   tituloDoBloqueio,
   type Acesso,
@@ -91,5 +93,27 @@ describe("textos", () => {
     expect(tituloDoBloqueio(b)).toBe("Indisponível no Fivewin");
     expect(detalheDoBloqueio(b)).toBe("O Fivewin ainda não envia ao banco do BI: despesas.");
     expect(tituloDoBloqueio({ motivo: "permissao" })).toBe("Sem permissão");
+  });
+});
+
+describe("banco sem dados (primeira carga do headquarter ainda não aconteceu)", () => {
+  it("sem nenhuma filial com movimento, o banco está sem dados", () => {
+    expect(bancoSemDados({ filiais: [] })).toBe(true);
+  });
+
+  it("com ao menos uma filial, tem dados", () => {
+    expect(bancoSemDados({ filiais: [{ codigo: 1 }] })).toBe(false);
+  });
+
+  it("lista que ainda não chegou não é 'sem dados' (continua carregando)", () => {
+    expect(bancoSemDados(undefined)).toBe(false);
+  });
+
+  it("só as telas que leem do banco são afetadas: a DFC, sem fonte de dados, não", () => {
+    expect(telaLeDoBanco("painel-executivo")).toBe(true);
+    expect(telaLeDoBanco("vendas")).toBe(true);
+    expect(telaLeDoBanco("metas")).toBe(true);
+    expect(telaLeDoBanco("financeiro")).toBe(true);
+    expect(telaLeDoBanco("dfc")).toBe(false);
   });
 });
