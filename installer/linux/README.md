@@ -28,22 +28,33 @@ Diferenças em relação ao instalador antigo (além dos nomes):
 - A tag da imagem é escolhida na instalação (as do menu, em `config.py`, ou qualquer nome de tag digitado), em vez de fixa no template.
 - A atualização lista só clientes do v2 (ignora compose de outra imagem) e guarda `docker-compose.yml.backup`.
 
-## Credencial do Docker Hub
+## Credenciais (`resources/credentials.json`)
 
-O repositório da imagem é privado e o instalador faz `docker login`. O token **não fica no código-fonte**. Ele é lido, nesta ordem, de:
+As credenciais do Docker Hub e do FTP da SG **não ficam no código-fonte**: vão num único arquivo, `resources/credentials.json`, que é **criado antes de compilar** (copie `resources/credentials-example.json` e preencha), fica **fora do git** e é embutido no executável pelo PyInstaller.
+
+```json
+{
+  "docker": { "user": "usuario-do-docker-hub", "token": "token-somente-leitura-do-docker-hub" },
+  "ftp": { "host": "ftp.exemplo.com.br", "user": "usuario-do-ftp", "pass": "senha-do-ftp", "dir": "/linux/ubuntu-libmysqlx64" }
+}
+```
+
+O `dir` do FTP é opcional (o padrão é o do exemplo). O `credentials-example.json` é o modelo versionado: ao acrescentar um campo novo, atualize os dois (um teste confere que o modelo tem exatamente os campos que o instalador lê).
+
+**Docker Hub** (o repositório da imagem é privado e o instalador faz `docker login`), campo a campo, nesta ordem:
 
 1. variáveis `SGBI_DOCKER_USER` e `SGBI_DOCKER_TOKEN`;
-2. `resources/docker-login.json` (`{"user": "sgsistemas", "token": "..."}`), **criado antes de compilar** e ignorado pelo git; o PyInstaller o embute no executável (pede para o coordenador o token, de preferência somente leitura);
-3. pergunta ao técnico.
+2. seção `docker` do `credentials.json`;
+3. pergunta ao técnico (só o que ainda faltar).
 
-Quem tiver o executável consegue extrair o token embutido: use um token somente leitura e rotacione-o ao trocar de técnicos/clientes (P64).
+Quem tiver o executável consegue extrair o que está embutido: use um token somente leitura no Docker Hub e rotacione-o ao trocar de técnicos/clientes (P64).
 
 ## libmysqlclient (headquarter)
 
 O headquarter precisa da `libmysqlclient.so.18.1.0` em **`<SER>/dll/x64/sgdbc/mysql/`** (a pasta é criada se não existir). O instalador:
 
 1. se a lib já está lá, não faz nada;
-2. senão, baixa do FTP da SG (pasta `/linux/ubuntu-libmysqlx64/`), com `SGBI_FTP_HOST`, `SGBI_FTP_USER` e `SGBI_FTP_PASS` (e `SGBI_FTP_REMOTE_DIR`, se for outra pasta) **ou** `resources/ftp-login.json` embutido na compilação, como o do Docker Hub (fora do git): `{"host": "...", "user": "...", "pass": "..."}`;
+2. senão, baixa do FTP da SG (pasta `/linux/ubuntu-libmysqlx64/`), com as variáveis `SGBI_FTP_HOST`, `SGBI_FTP_USER` e `SGBI_FTP_PASS` (e `SGBI_FTP_REMOTE_DIR`, se for outra pasta) ou, campo a campo, a seção `ftp` do `credentials.json` embutido;
 3. por último, usa `resources/libmysqlclient.so.18.1.0`, se estiver presente na compilação.
 
 O `apirestview-config.json` do headquarter é gravado **antes** da lib: se ela faltar, o instalador avisa onde copiá-la e a instalação do resto já está feita. (O instalador antigo procurava a lib na pasta de instalação, e não no SER; por isso falhava mesmo com a lib já instalada.)
@@ -68,7 +79,7 @@ Execute na pasta `installer/linux`; precisa só de Docker. Dois executáveis, co
 - **Ubuntu 16.04 a 22.04** (compilado no 16.04 com Python 3.8, para a glibc antiga): `dist/instalador-sgbi-v2-ubuntu-16-ate-22`
 - **Ubuntu 24.04 em diante**: `dist/instalador-sgbi-v2-ubuntu-24`
 
-Crie antes o `resources/docker-login.json` (seção acima).
+Crie antes o `resources/credentials.json` (seção acima).
 
 ```bash
 # Ubuntu 16.04 a 22.04 (demorado: compila o Python 3.8 com o pyenv)

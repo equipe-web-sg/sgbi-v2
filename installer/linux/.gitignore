@@ -4,9 +4,8 @@ dist/
 __pycache__/
 *.pyc
 
-# Credencial do Docker Hub embutida no executável (ver README): nunca vai para o git
-resources/docker-login.json
-# Credenciais do FTP da SG (libmysqlclient), idem
-resources/ftp-login.json
+# Credenciais (Docker Hub e FTP da SG) embutidas no executável (ver README): nunca vão para o git.
+# Copie resources/credentials-example.json para resources/credentials.json e preencha.
+resources/credentials.json
 # Biblioteca do headquarter (plano B quando o FTP falha), binária
 resources/libmysqlclient*

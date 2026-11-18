@@ -169,28 +169,42 @@ def install_docker() -> bool:
         return False
 
 
+# --------------------------------------------------------------------------- credenciais
+
+def load_credentials(section: str) -> Dict[str, str]:
+    """
+    Uma seção ("docker" ou "ftp") do `resources/credentials.json`, embutido ao compilar o
+    instalador (fora do git; o modelo é `credentials-example.json`). Devolve só textos já
+    sem espaços nas pontas; arquivo ausente, inválido ou sem a seção vira {}.
+    """
+    try:
+        with open(resource_path("credentials.json"), "r", encoding="utf-8") as f:
+            data = json.load(f)
+        values = data.get(section, {})
+        if not isinstance(values, dict):
+            return {}
+        return {str(key): str(value).strip() for key, value in values.items() if value is not None}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
 # --------------------------------------------------------------------------- Docker Hub
 
 def get_docker_credentials() -> Tuple[str, str]:
     """
     Usuário e token do Docker Hub para baixar a imagem (repositório privado). Em ordem:
     1. variáveis SGBI_DOCKER_USER / SGBI_DOCKER_TOKEN;
-    2. `resources/docker-login.json` ({"user": "...", "token": "..."}), colocado ao
-       compilar o instalador (fica fora do git, ver README);
+    2. seção "docker" do `resources/credentials.json` ({"user": "...", "token": "..."});
     3. pergunta ao técnico.
     O token nunca fica no código-fonte.
     """
     user = os.environ.get("SGBI_DOCKER_USER", "").strip()
     token = os.environ.get("SGBI_DOCKER_TOKEN", "").strip()
 
-    if not token:
-        try:
-            with open(resource_path("docker-login.json"), "r", encoding="utf-8") as f:
-                data = json.load(f)
-            user = user or str(data.get("user", "")).strip()
-            token = str(data.get("token", "")).strip()
-        except (OSError, ValueError):
-            pass
+    # Campo a campo: o que a variável de ambiente não informar vem do arquivo.
+    data = load_credentials("docker")
+    user = user or data.get("user", "")
+    token = token or data.get("token", "")
 
     user = user or config.DOCKER_USUARIO_PADRAO
     if not token:
@@ -598,8 +612,8 @@ def get_ftp_credentials() -> Optional[Dict[str, str]]:
     """
     Credenciais do FTP da SG onde fica a lib, ou None. Em ordem:
     1. variáveis SGBI_FTP_HOST / SGBI_FTP_USER / SGBI_FTP_PASS (e SGBI_FTP_REMOTE_DIR);
-    2. `resources/ftp-login.json` ({"host": "...", "user": "...", "pass": "..."}), colocado
-       ao compilar o instalador (fora do git, como o docker-login.json).
+    2. seção "ftp" do `resources/credentials.json` ({"host": "...", "user": "...", "pass": "...",
+       "dir": "..." opcional}), embutido ao compilar o instalador.
     """
     values = {
         "host": os.environ.get("SGBI_FTP_HOST", "").strip(),
@@ -609,13 +623,9 @@ def get_ftp_credentials() -> Optional[Dict[str, str]]:
     }
 
     if not (values["host"] and values["user"] and values["pass"]):
-        try:
-            with open(resource_path("ftp-login.json"), "r", encoding="utf-8") as f:
-                data = json.load(f)
-            for key in values:
-                values[key] = values[key] or str(data.get(key, "")).strip()
-        except (OSError, ValueError):
-            pass
+        data = load_credentials("ftp")
+        for key in values:
+            values[key] = values[key] or data.get(key, "")
 
     if not (values["host"] and values["user"] and values["pass"]):
         return None
@@ -661,7 +671,7 @@ def download_libmysqlclient_via_ftp(ser_directory: str, filename: str = LIB_FILE
         credentials = get_ftp_credentials()
         if not credentials:
             print_warning("Credenciais do FTP não informadas (SGBI_FTP_HOST, SGBI_FTP_USER e SGBI_FTP_PASS, "
-                          "ou resources/ftp-login.json no instalador).")
+                          "ou a seção ftp do resources/credentials.json no instalador).")
             return False
 
         attempts = 3

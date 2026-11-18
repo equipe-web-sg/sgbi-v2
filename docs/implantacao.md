@@ -111,7 +111,7 @@ Os dois BIs podem apontar para o mesmo banco, e a tabela `migrations` guarda só
 
 - imagem `sgsistemas/sgbi-v2:<tag>`, pasta `/opt/sgbi/clientes-v2/<slug>`, container `sgbi-v2-<slug>`, porta sugerida 9100; **o `mysql-sgbi` e o banco `sgbi_<slug>` são compartilhados** com o antigo;
 - o compose de cada cliente leva `API_VIEW`, `DB_*`, `CLIENT_SLUG` e o `JWT_SECRET` gerado (permissão 600); `PLATAFORMA` não vai para produção (D46);
-- a credencial do Docker Hub não fica no código (variáveis, `resources/docker-login.json` fora do git, ou pergunta).
+- as credenciais do Docker Hub e do FTP não ficam no código (variáveis ou `resources/credentials.json`, fora do git, com o modelo `credentials-example.json`; o Docker Hub ainda pergunta ao técnico se faltar).
 
 Falta (P64): instalador de **Windows/Fivewin** (`JWT_SECRET` por serviço NSSM no lugar de `setx /m`, slug P62, `scripts/migrar.mjs` antes do `server.js`; atenção aos symlinks do standalone no Windows sem privilégio de administrador), numeração das versões e o token do Docker Hub.
 

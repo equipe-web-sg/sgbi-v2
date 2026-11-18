@@ -35,10 +35,10 @@ docker run --rm -p 9000:3000 -e API_VIEW=http://host:porta -e DB_HOST=host -e DB
 O instalador fica em `installer/linux/` (detalhes no [README dele](installer/linux/README.md)). Precisa só de Docker. São **dois executáveis**: um para Ubuntu 16.04 a 22.04 e outro para Ubuntu 24.04 em diante.
 
 1. *(Opcional)* Para a versão aparecer no menu do instalador, acrescente a tag em `VERSOES_CONHECIDAS` no `installer/linux/config.py`. Não é necessário: qualquer tag pode ser digitada na hora, sem recompilar.
-2. Crie o `installer/linux/resources/docker-login.json` com a credencial do Docker Hub que o instalador usa para baixar a imagem. Ele **não vai para o git** e fica embutido no executável, então use um token somente leitura:
+2. Crie o `installer/linux/resources/credentials.json` a partir do modelo (`credentials-example.json`, na mesma pasta) e preencha: `docker` (credencial do Docker Hub, para o instalador baixar a imagem) e `ftp` (FTP da SG, de onde vem a `libmysqlclient`). Ele **não vai para o git** e fica embutido no executável, então use um token somente leitura no Docker Hub:
 
-```json
-{"user": "sgsistemas", "token": "TOKEN_SOMENTE_LEITURA"}
+```bash
+cp installer/linux/resources/credentials-example.json installer/linux/resources/credentials.json
 ```
 
 3. Compile (na pasta `installer/linux`):

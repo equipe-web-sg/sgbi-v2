@@ -2,12 +2,37 @@
 Testes das funções puras do instalador (sem Docker, MySQL nem rede).
 Rodar: `python3 -m unittest -v` nesta pasta (só biblioteca padrão).
 """
+import contextlib
+import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import config
 import utils
+
+VARIAVEIS_DE_CREDENCIAL = (
+    "SGBI_DOCKER_USER", "SGBI_DOCKER_TOKEN",
+    "SGBI_FTP_HOST", "SGBI_FTP_USER", "SGBI_FTP_PASS", "SGBI_FTP_REMOTE_DIR",
+)
+
+
+@contextlib.contextmanager
+def recursos_falsos(credentials=None):
+    """
+    Isola o teste das credenciais reais da máquina: `resources/` vira uma pasta temporária
+    (com `credentials.json` só se `credentials` for dado) e as variáveis SGBI_* somem.
+    """
+    with tempfile.TemporaryDirectory() as pasta:
+        if credentials is not None:
+            conteudo = credentials if isinstance(credentials, str) else json.dumps(credentials)
+            (Path(pasta) / "credentials.json").write_text(conteudo, encoding="utf-8")
+        ambiente = {k: v for k, v in os.environ.items() if k not in VARIAVEIS_DE_CREDENCIAL}
+        with mock.patch.object(utils, "resource_path", lambda nome: Path(pasta) / nome), \
+                mock.patch.dict(os.environ, ambiente, clear=True):
+            yield Path(pasta)
 
 COMPOSE = """version: '3'
 services:
@@ -176,33 +201,9 @@ class LibMysqlClient(unittest.TestCase):
             self.assertFalse(utils.libmysqlclient_present(ser))
 
     def test_sem_lib_e_sem_credencial_falha_e_cria_a_pasta(self):
-        import os
-        with tempfile.TemporaryDirectory() as ser:
-            antigos = {n: os.environ.pop(n, None) for n in ("SGBI_FTP_HOST", "SGBI_FTP_USER", "SGBI_FTP_PASS")}
-            try:
-                self.assertFalse(utils.ensure_libmysqlclient(ser))
-                self.assertTrue(utils.libmysqlclient_dir(ser).is_dir())  # "se não existir, criar"
-            finally:
-                for n, v in antigos.items():
-                    if v is not None:
-                        os.environ[n] = v
-
-    def test_credenciais_do_ftp_pelas_variaveis_com_pasta_padrao(self):
-        import os
-        antigos = {n: os.environ.get(n) for n in ("SGBI_FTP_HOST", "SGBI_FTP_USER", "SGBI_FTP_PASS", "SGBI_FTP_REMOTE_DIR")}
-        try:
-            os.environ.update({"SGBI_FTP_HOST": "ftp.exemplo", "SGBI_FTP_USER": "u", "SGBI_FTP_PASS": "p"})
-            os.environ.pop("SGBI_FTP_REMOTE_DIR", None)
-            self.assertEqual(utils.get_ftp_credentials(),
-                             {"host": "ftp.exemplo", "user": "u", "pass": "p", "dir": "/linux/ubuntu-libmysqlx64"})
-            os.environ.pop("SGBI_FTP_PASS")
-            self.assertIsNone(utils.get_ftp_credentials())
-        finally:
-            for n, v in antigos.items():
-                if v is None:
-                    os.environ.pop(n, None)
-                else:
-                    os.environ[n] = v
+        with recursos_falsos(), tempfile.TemporaryDirectory() as ser:
+            self.assertFalse(utils.ensure_libmysqlclient(ser))
+            self.assertTrue(utils.libmysqlclient_dir(ser).is_dir())  # "se não existir, criar"
 
     def test_fluxo_nao_usa_mais_a_pasta_de_instalacao_para_a_lib(self):
         fluxo = (Path(__file__).parent / "flows.py").read_text(encoding="utf-8")
@@ -213,6 +214,78 @@ class LibMysqlClient(unittest.TestCase):
         fluxo = (Path(__file__).parent / "flows.py").read_text(encoding="utf-8")
         corpo = fluxo[fluxo.index("def configure_sgvx_system"):fluxo.index("# ---", fluxo.index("def configure_sgvx_system"))]
         self.assertLess(corpo.index("create_apirest_config"), corpo.index("ensure_libmysqlclient"))
+
+
+class Credenciais(unittest.TestCase):
+    """Docker Hub e FTP saem de um só arquivo, resources/credentials.json (modelo: credentials-example.json)."""
+
+    COMPLETO = {
+        "docker": {"user": "equipe", "token": "tok-123"},
+        "ftp": {"host": "ftp.exemplo", "user": "u", "pass": "p", "dir": "/outra/pasta"},
+    }
+
+    def test_docker_vem_da_secao_docker(self):
+        with recursos_falsos(self.COMPLETO):
+            self.assertEqual(utils.get_docker_credentials(), ("equipe", "tok-123"))
+
+    def test_ftp_vem_da_secao_ftp(self):
+        with recursos_falsos(self.COMPLETO):
+            self.assertEqual(utils.get_ftp_credentials(),
+                             {"host": "ftp.exemplo", "user": "u", "pass": "p", "dir": "/outra/pasta"})
+
+    def test_ftp_sem_dir_usa_a_pasta_padrao(self):
+        dados = {"ftp": {"host": "h", "user": "u", "pass": "p"}}
+        with recursos_falsos(dados):
+            self.assertEqual(utils.get_ftp_credentials()["dir"], "/linux/ubuntu-libmysqlx64")
+
+    def test_variaveis_de_ambiente_valem_mais_que_o_arquivo(self):
+        with recursos_falsos(self.COMPLETO):
+            with mock.patch.dict(os.environ, {"SGBI_DOCKER_TOKEN": "do-ambiente", "SGBI_FTP_HOST": "outro-host"}):
+                self.assertEqual(utils.get_docker_credentials(), ("equipe", "do-ambiente"))
+                self.assertEqual(utils.get_ftp_credentials()["host"], "outro-host")
+                self.assertEqual(utils.get_ftp_credentials()["user"], "u")  # o resto continua do arquivo
+
+    def test_so_uma_secao_preenchida_nao_atrapalha_a_outra(self):
+        with recursos_falsos({"docker": {"user": "equipe", "token": "t"}}):
+            self.assertIsNone(utils.get_ftp_credentials())
+            self.assertEqual(utils.get_docker_credentials(), ("equipe", "t"))
+        with recursos_falsos({"ftp": {"host": "h", "user": "u", "pass": "p"}}):
+            self.assertIsNotNone(utils.get_ftp_credentials())
+
+    def test_campos_vazios_contam_como_ausentes(self):
+        with recursos_falsos({"ftp": {"host": "", "user": "", "pass": ""}}):
+            self.assertIsNone(utils.get_ftp_credentials())
+        with recursos_falsos({"ftp": {"host": "h", "user": "u", "pass": "  "}}):
+            self.assertIsNone(utils.get_ftp_credentials())
+
+    def test_arquivo_ausente_invalido_ou_de_formato_errado_nao_quebra(self):
+        with recursos_falsos():
+            self.assertEqual(utils.load_credentials("docker"), {})
+            self.assertIsNone(utils.get_ftp_credentials())
+        for conteudo in ("isto não é json", "[]", '{"docker": "texto", "ftp": 3}', "null"):
+            with recursos_falsos(conteudo):
+                self.assertEqual(utils.load_credentials("docker"), {}, conteudo)
+                self.assertIsNone(utils.get_ftp_credentials(), conteudo)
+
+    def test_valores_nao_texto_viram_texto_e_nulos_somem(self):
+        with recursos_falsos({"ftp": {"host": "h", "user": "u", "pass": 1234, "dir": None}}):
+            self.assertEqual(utils.get_ftp_credentials(),
+                             {"host": "h", "user": "u", "pass": "1234", "dir": "/linux/ubuntu-libmysqlx64"})
+
+    def test_modelo_do_arquivo_tem_exatamente_os_campos_que_o_instalador_le(self):
+        modelo = json.loads((Path(__file__).parent / "resources" / "credentials-example.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(modelo), {"docker", "ftp"})
+        self.assertEqual(set(modelo["docker"]), {"user", "token"})
+        self.assertEqual(set(modelo["ftp"]), {"host", "user", "pass", "dir"})
+        # e o instalador consegue ler o modelo (com valores de mentira)
+        with recursos_falsos(modelo):
+            self.assertEqual(len(utils.get_docker_credentials()), 2)
+            self.assertIsNotNone(utils.get_ftp_credentials())
+
+    def test_arquivos_antigos_nao_sao_mais_usados(self):
+        codigo = (Path(__file__).parent / "utils.py").read_text(encoding="utf-8")
+        self.assertNotIn("docker-login.json", codigo)
+        self.assertNotIn("ftp-login.json", codigo)
 
 
 class ArquivosDoSistema(unittest.TestCase):
