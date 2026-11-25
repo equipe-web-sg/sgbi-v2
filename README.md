@@ -188,6 +188,7 @@ Componente (useQuery) → /api/<tela>/... (route.ts) → server/data.ts ('use ca
 - **Uma pasta por tela** em `src/features/<tela>/`, com a mesma divisão do Painel Executivo. O que for usado por mais de uma tela fica em `src/lib/`, `src/components/` ou `src/server/`.
 - **Visual do BI antigo:** azul `#4B8CFF`, cards `rounded-2xl`, fonte Inter. Use sempre as classes dos tokens (`bg-card`, `text-muted-foreground`...), nunca cores fixas, para funcionar nos dois temas.
 - **Layout compacto:** a tela deve caber sem rolar em 1536 × 864. Verifique também em 1280, 1366 e 1920 px de largura.
+- **Nomes inteiros:** nada de variáveis, parâmetros, propriedades ou outras declarações de 1 caractere (`e`, `i`, `x`, `a`, `b`...); use `evento`, `indice`, `coluna`, `primeiro`... O ESLint (`id-length`) confere. Detalhes no `CLAUDE.md`.
 - **Valores com 2 casas decimais** (moeda, %, p.p.) via `format.ts`.
 - **Sem controles nativos** nos filtros (`<select>`, `<input type="date">`, checkbox): use os componentes de `src/components/ui/`.
 - **Avisos** (dados incompletos, erros de carregamento) vão para o botão de avisos da barra lateral, com `useAvisos()`, e não para faixas no topo da tela.
