@@ -147,17 +147,17 @@ def execute_flow(option):
         else:
             return False
 
-    except ImportError as e:
+    except ImportError as erro:
         if COLORS_AVAILABLE:
-            console.print(f"❌ Erro ao importar flows: {e}", style="bold red")
+            console.print(f"❌ Erro ao importar flows: {erro}", style="bold red")
         else:
-            print(f"❌ Erro ao importar flows: {e}")
+            print(f"❌ Erro ao importar flows: {erro}")
         return False
-    except Exception as e:
+    except Exception as erro:
         if COLORS_AVAILABLE:
-            console.print(f"❌ Erro durante execução: {e}", style="bold red")
+            console.print(f"❌ Erro durante execução: {erro}", style="bold red")
         else:
-            print(f"❌ Erro durante execução: {e}")
+            print(f"❌ Erro durante execução: {erro}")
         return False
 
 def main():
@@ -212,11 +212,11 @@ def main():
     except KeyboardInterrupt:
         print("\n\n👋 Instalação cancelada pelo usuário.")
         sys.exit(0)
-    except Exception as e:
+    except Exception as erro:
         if COLORS_AVAILABLE:
-            console.print(f"❌ Erro inesperado: {e}", style="bold red")
+            console.print(f"❌ Erro inesperado: {erro}", style="bold red")
         else:
-            print(f"Erro inesperado: {e}")
+            print(f"Erro inesperado: {erro}")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -162,8 +162,8 @@ def configure_mysql_compose(database_dir: str) -> Dict[str, str]:
             password_match = re.search(r'MYSQL_ROOT_PASSWORD:\s*(.+)', compose_content)
             if password_match:
                 mysql_password = password_match.group(1).strip()
-        except Exception as e:
-            print_warning(f"Erro ao ler arquivo existente: {e}")
+        except Exception as erro:
+            print_warning(f"Erro ao ler arquivo existente: {erro}")
             print_warning("Usando configurações padrão...")
 
         mysql_config = {"host": get_machine_ip(), "port": mysql_port, "password": mysql_password}
@@ -351,8 +351,8 @@ def configure_sgvx_system(ser_directory: str, mysql_config: Dict[str, str]) -> b
 def choose_version_for_install() -> Optional[str]:
     """Tag da imagem para uma instalação nova: uma das conhecidas ou outra digitada."""
     print("\n📦 Versões do SGBI v2:")
-    for i, version in enumerate(config.VERSOES_CONHECIDAS, 1):
-        print(f"{i}) {version}")
+    for numero, version in enumerate(config.VERSOES_CONHECIDAS, 1):
+        print(f"{numero}) {version}")
     print("0) Digitar outra tag (qualquer nome)")
 
     while True:
@@ -530,8 +530,8 @@ def get_client_current_version(client_path: str) -> Optional[str]:
         if not version:
             print_warning(f"Versão da imagem {config.IMAGEM_SGBI} não encontrada no docker-compose.yml de {client_path}")
         return version
-    except Exception as e:
-        print_error(f"Erro ao ler versão do cliente {client_path}: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao ler versão do cliente {client_path}: {erro}")
         return None
 
 
@@ -554,8 +554,8 @@ def list_installed_clients(clients_dir: str) -> list:
 
         if not clients_list:
             print_warning("Nenhum cliente SGBI v2 instalado encontrado no diretório.")
-    except Exception as e:
-        print_error(f"Erro ao listar clientes: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao listar clientes: {erro}")
 
     return clients_list
 
@@ -567,8 +567,8 @@ def choose_client_to_update(clients_list: list) -> Optional[dict]:
 
     print("\n📋 Clientes SGBI v2 instalados encontrados:")
     print("=" * 50)
-    for i, client in enumerate(clients_list, 1):
-        print(f"{i}) Cliente {client['name']} (versão {client['version']})")
+    for numero, client in enumerate(clients_list, 1):
+        print(f"{numero}) Cliente {client['name']} (versão {client['version']})")
     print("0) Cancelar")
     print("=" * 50)
 
@@ -596,13 +596,13 @@ def choose_client_to_update(clients_list: list) -> Optional[dict]:
 
 
 def choose_version_to_install(current_version: str) -> Optional[str]:
-    installable = [v for v in config.VERSOES_CONHECIDAS if v != current_version]
+    installable = [versao for versao in config.VERSOES_CONHECIDAS if versao != current_version]
 
     print("\n🔄 Versões disponíveis para atualização:")
     print(f"   📌 Versão atual: {current_version}")
     print("=" * 50)
-    for i, version in enumerate(installable, 1):
-        print(f"{i}) Versão {version}")
+    for numero, version in enumerate(installable, 1):
+        print(f"{numero}) Versão {version}")
     print("T) Digitar outra tag (qualquer nome)")
     print("0) Cancelar")
     print("=" * 50)
@@ -668,8 +668,8 @@ def update_client_docker_compose(client_path: str, new_version: str) -> bool:
         print_success(f"docker-compose.yml atualizado com a nova versão: {new_version}")
         print(f"   (cópia da configuração anterior: {backup_file})")
         return True
-    except Exception as e:
-        print_error(f"Erro ao atualizar docker-compose.yml: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao atualizar docker-compose.yml: {erro}")
         return False
 
 
@@ -772,8 +772,8 @@ def complete_installation() -> bool:
         print(f"   📂 SER: {ser_directory}")
         return True
 
-    except Exception as e:
-        print_error(f"Erro durante instalação completa: {e}")
+    except Exception as erro:
+        print_error(f"Erro durante instalação completa: {erro}")
         return False
 
 
@@ -815,8 +815,8 @@ def install_client() -> bool:
         print(f"   📂 SER: {ser_directory}")
         return True
 
-    except Exception as e:
-        print_error(f"Erro durante instalação do cliente: {e}")
+    except Exception as erro:
+        print_error(f"Erro durante instalação do cliente: {erro}")
         return False
 
 
@@ -857,8 +857,8 @@ def prepare_database() -> bool:
         print("   Use a 'Opção 2 - Instalar Cliente' para adicionar clientes SGBI v2")
         return True
 
-    except Exception as e:
-        print_error(f"Erro durante preparação do banco: {e}")
+    except Exception as erro:
+        print_error(f"Erro durante preparação do banco: {erro}")
         return False
 
 
@@ -924,6 +924,6 @@ def update_system() -> bool:
     except KeyboardInterrupt:
         print_error("\nOperação interrompida pelo usuário.")
         return False
-    except Exception as e:
-        print_error(f"Erro durante atualização do sistema: {e}")
+    except Exception as erro:
+        print_error(f"Erro durante atualização do sistema: {erro}")
         return False

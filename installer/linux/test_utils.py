@@ -29,7 +29,7 @@ def recursos_falsos(credentials=None):
         if credentials is not None:
             conteudo = credentials if isinstance(credentials, str) else json.dumps(credentials)
             (Path(pasta) / "credentials.json").write_text(conteudo, encoding="utf-8")
-        ambiente = {k: v for k, v in os.environ.items() if k not in VARIAVEIS_DE_CREDENCIAL}
+        ambiente = {nome: valor for nome, valor in os.environ.items() if nome not in VARIAVEIS_DE_CREDENCIAL}
         with mock.patch.object(utils, "resource_path", lambda nome: Path(pasta) / nome), \
                 mock.patch.dict(os.environ, ambiente, clear=True):
             yield Path(pasta)
@@ -77,10 +77,10 @@ class Versao(unittest.TestCase):
 
 class JwtSecret(unittest.TestCase):
     def test_tem_o_tamanho_que_o_v2_exige_e_e_diferente_a_cada_vez(self):
-        a, b = utils.generate_jwt_secret(), utils.generate_jwt_secret()
-        self.assertGreaterEqual(len(a), 32)
-        self.assertNotEqual(a, b)
-        self.assertRegex(a, r"^[A-Za-z0-9_-]+$")  # sem nada que o YAML ou o compose interpretem
+        primeiro, segundo = utils.generate_jwt_secret(), utils.generate_jwt_secret()
+        self.assertGreaterEqual(len(primeiro), 32)
+        self.assertNotEqual(primeiro, segundo)
+        self.assertRegex(primeiro, r"^[A-Za-z0-9_-]+$")  # sem nada que o YAML ou o compose interpretem
 
 
 class ImagemNoCompose(unittest.TestCase):
@@ -308,10 +308,10 @@ class ArquivosDoSistema(unittest.TestCase):
 class Porta(unittest.TestCase):
     def test_porta_ocupada_e_invalida(self):
         import socket
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("0.0.0.0", 0))
-            s.listen(1)
-            self.assertFalse(utils.is_port_free(str(s.getsockname()[1])))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soquete:
+            soquete.bind(("0.0.0.0", 0))
+            soquete.listen(1)
+            self.assertFalse(utils.is_port_free(str(soquete.getsockname()[1])))
         self.assertFalse(utils.is_port_free("abc"))
 
 

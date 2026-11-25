@@ -110,9 +110,9 @@ def run_command(command: str, capture_output: bool = True, check: bool = False) 
             text=True,
             check=check
         )
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as erro:
         print_error(f"Erro ao executar comando: {command}")
-        print(f"Saída de erro: {e.stderr}")
+        print(f"Saída de erro: {erro.stderr}")
         raise
 
 
@@ -178,8 +178,8 @@ def load_credentials(section: str) -> Dict[str, str]:
     sem espaços nas pontas; arquivo ausente, inválido ou sem a seção vira {}.
     """
     try:
-        with open(resource_path("credentials.json"), "r", encoding="utf-8") as f:
-            data = json.load(f)
+        with open(resource_path("credentials.json"), "r", encoding="utf-8") as arquivo:
+            data = json.load(arquivo)
         values = data.get(section, {})
         if not isinstance(values, dict):
             return {}
@@ -235,8 +235,8 @@ def docker_login() -> bool:
         print_error("Falha ao efetuar login no Docker!")
         print_error("Por favor, entre em contato com o suporte técnico.")
         return False
-    except Exception as e:
-        print_error(f"Erro ao tentar login no Docker: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao tentar login no Docker: {erro}")
         print_error("Por favor, entre em contato com o suporte técnico.")
         return False
 
@@ -282,7 +282,7 @@ def validate_sg_files(directory_path: str) -> Tuple[bool, List[str]]:
         return False, ["Diretório não existe"]
 
     path = Path(directory_path)
-    missing_files = [f for f in config.ARQUIVOS_SG_OBRIGATORIOS if not (path / f).exists()]
+    missing_files = [arquivo for arquivo in config.ARQUIVOS_SG_OBRIGATORIOS if not (path / arquivo).exists()]
     return len(missing_files) == 0, missing_files
 
 
@@ -296,8 +296,8 @@ def create_directory_structure(base_path: str, subdirs: List[str]) -> bool:
     except PermissionError:
         print_error(f"Sem permissão para criar diretórios em {base_path}")
         return False
-    except Exception as e:
-        print_error(f"Erro ao criar diretórios: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao criar diretórios: {erro}")
         return False
 
 
@@ -326,16 +326,16 @@ def copy_embedded_file(resource_name: str, destination_path: str) -> bool:
             print_success(f"Arquivo copiado: {resource_name} → {destination_path}")
             return True
         return False
-    except Exception as e:
-        print_error(f"Erro ao copiar arquivo: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao copiar arquivo: {erro}")
         return False
 
 
 def get_machine_ip() -> str:
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as soquete:
+            soquete.connect(("8.8.8.8", 80))
+            return soquete.getsockname()[0]
     except Exception:
         return "127.0.0.1"
 
@@ -346,10 +346,10 @@ def is_port_free(port: str) -> bool:
         number = int(port)
     except ValueError:
         return False
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soquete:
+        soquete.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            s.bind(("0.0.0.0", number))
+            soquete.bind(("0.0.0.0", number))
             return True
         except OSError:
             return False
@@ -415,7 +415,7 @@ def get_compose_image_version(compose_content: str) -> Optional[str]:
 
 def set_compose_image_version(compose_content: str, new_version: str) -> str:
     """Troca a tag da imagem do v2. Não mexe em nada além dela."""
-    return re.sub(_IMAGE_PATTERN, lambda m: f"{m.group(1)}{new_version}{m.group(3)}", compose_content, count=1)
+    return re.sub(_IMAGE_PATTERN, lambda correspondencia: f"{correspondencia.group(1)}{new_version}{correspondencia.group(3)}", compose_content, count=1)
 
 
 def compose_has_env_var(compose_content: str, name: str) -> bool:
@@ -431,18 +431,18 @@ def add_compose_env_var(compose_content: str, name: str, value: str) -> str:
         return compose_content
 
     lines = compose_content.split("\n")
-    env_index = next((i for i, ln in enumerate(lines) if re.match(r'^\s*environment:\s*$', ln)), None)
+    env_index = next((indice for indice, ln in enumerate(lines) if re.match(r'^\s*environment:\s*$', ln)), None)
     if env_index is None:
         return compose_content
 
     last = env_index
     indent = None
-    for i in range(env_index + 1, len(lines)):
-        item = re.match(r'^(\s*)-\s*\S', lines[i])
+    for indice in range(env_index + 1, len(lines)):
+        item = re.match(r'^(\s*)-\s*\S', lines[indice])
         if item:
             indent = item.group(1)
-            last = i
-        elif lines[i].strip() == "" or lines[i].lstrip().startswith("#"):
+            last = indice
+        elif lines[indice].strip() == "" or lines[indice].lstrip().startswith("#"):
             continue
         else:
             break
@@ -475,8 +475,8 @@ def ensure_docker_compose_version(file_path: str, is_legacy: bool = False) -> bo
         insert_line = "version: '3'\n" if is_legacy else ""
         path.write_text(bom + insert_line + text, encoding="utf-8")
         return True
-    except Exception as e:
-        print_error(f"Erro ao garantir versão do docker-compose: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao garantir versão do docker-compose: {erro}")
         return False
 
 
@@ -488,8 +488,8 @@ def backup_file(file_path: str) -> Optional[str]:
         shutil.copy2(file_path, backup_path)
         print_success(f"Backup criado: {backup_path}")
         return backup_path
-    except Exception as e:
-        print_error(f"Erro ao criar backup: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao criar backup: {erro}")
         return None
 
 
@@ -511,8 +511,8 @@ def create_apirest_config(ser_directory: str, config_values: Dict[str, str]) -> 
             print_error(f"Template não encontrado: {template_path}")
             return False
 
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template_content = f.read()
+        with open(template_path, 'r', encoding='utf-8') as arquivo:
+            template_content = arquivo.read()
 
         variables = {
             "DB_HOST": config_values.get("host"),
@@ -525,17 +525,17 @@ def create_apirest_config(ser_directory: str, config_values: Dict[str, str]) -> 
 
         try:
             json.loads(final_content)
-        except json.JSONDecodeError as e:
-            print_error(f"JSON resultante é inválido: {e}")
+        except json.JSONDecodeError as erro:
+            print_error(f"JSON resultante é inválido: {erro}")
             return False
 
-        with open(config_file, 'w', encoding='utf-8') as f:
-            f.write(final_content)
+        with open(config_file, 'w', encoding='utf-8') as arquivo:
+            arquivo.write(final_content)
 
         print_success(f"Arquivo criado: {config_file}")
         return True
-    except Exception as e:
-        print_error(f"Erro ao criar apirestview-config.json: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao criar apirestview-config.json: {erro}")
         return False
 
 
@@ -549,11 +549,11 @@ def test_mysql_connection(host: str, port: str, user: str, password: str) -> boo
         )
         connection.close()
         return True
-    except mysql.connector.Error as e:
-        print_error(f"Erro de conexão MySQL: {e}")
+    except mysql.connector.Error as erro:
+        print_error(f"Erro de conexão MySQL: {erro}")
         return False
-    except Exception as e:
-        print_error(f"Erro inesperado ao conectar MySQL: {e}")
+    except Exception as erro:
+        print_error(f"Erro inesperado ao conectar MySQL: {erro}")
         return False
 
 
@@ -568,11 +568,11 @@ def create_database(host: str, port: str, user: str, password: str, database_nam
         cursor.close()
         connection.close()
         return True
-    except mysql.connector.Error as e:
-        print_error(f"Erro ao criar database: {e}")
+    except mysql.connector.Error as erro:
+        print_error(f"Erro ao criar database: {erro}")
         return False
-    except Exception as e:
-        print_error(f"Erro inesperado ao criar database: {e}")
+    except Exception as erro:
+        print_error(f"Erro inesperado ao criar database: {erro}")
         return False
 
 
@@ -653,8 +653,8 @@ def setup_libmysqlclient(ser_directory: str) -> bool:
         os.chmod(target_file, 0o755)
         print_success(f"{LIB_FILENAME} configurada com sucesso")
         return target_file.exists()
-    except Exception as e:
-        print_error(f"Erro ao configurar libmysqlclient: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao configurar libmysqlclient: {erro}")
         return False
 
 
@@ -685,8 +685,8 @@ def download_libmysqlclient_via_ftp(ser_directory: str, filename: str = LIB_FILE
                     if filename not in ftp.nlst():
                         raise FileNotFoundError(f"{filename} não encontrado no FTP {credentials['dir']}")
 
-                    with open(target_file, 'wb') as f:
-                        ftp.retrbinary(f'RETR {filename}', f.write)
+                    with open(target_file, 'wb') as arquivo:
+                        ftp.retrbinary(f'RETR {filename}', arquivo.write)
 
                 os.chmod(target_file, 0o755)
                 if target_file.stat().st_size == 0:
@@ -694,15 +694,15 @@ def download_libmysqlclient_via_ftp(ser_directory: str, filename: str = LIB_FILE
 
                 print_success(f"{filename} baixado com sucesso para {target_file}")
                 return True
-            except (ftplib.all_errors, socket.timeout, FileNotFoundError, IOError) as e:
-                print_warning(f"Tentativa {attempt}/{attempts} falhou: {e}")
+            except (ftplib.all_errors, socket.timeout, FileNotFoundError, IOError) as erro:
+                print_warning(f"Tentativa {attempt}/{attempts} falhou: {erro}")
                 if attempt == attempts:
                     print_error("Falha ao baixar do FTP após várias tentativas")
                     return False
                 time.sleep(2 ** attempt)
         return False
-    except Exception as e:
-        print_error(f"Erro ao preparar download via FTP: {e}")
+    except Exception as erro:
+        print_error(f"Erro ao preparar download via FTP: {erro}")
         return False
 
 
@@ -728,8 +728,8 @@ def ensure_libmysqlclient(ser_directory: str) -> bool:
 
 def get_ubuntu_version() -> Optional[float]:
     try:
-        with open("/etc/os-release", "r", encoding="utf-8") as f:
-            content = f.read()
+        with open("/etc/os-release", "r", encoding="utf-8") as arquivo:
+            content = arquivo.read()
         match = re.search(r'VERSION_ID\s*=\s*"?(\d+(?:\.\d+)?)"?', content)
         if match:
             return float(match.group(1))
