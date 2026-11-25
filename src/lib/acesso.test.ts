@@ -59,14 +59,14 @@ describe("bloqueio por permissão", () => {
   });
 
   it("liberar a tela libera os cards; liberar um card libera a tela e o bloco que o contêm", () => {
-    const p = ["vendas", "painel-executivo:kpis:venda"];
-    expect(permitido(p, "vendas:curva-abc")).toBe(true);
-    expect(permitido(p, "painel-executivo")).toBe(true);
-    expect(permitido(p, "painel-executivo:kpis")).toBe(true);
-    expect(permitido(p, "painel-executivo:kpis:venda")).toBe(true);
-    expect(permitido(p, "painel-executivo:kpis:despesas-operacionais")).toBe(false);
-    expect(permitido(p, "painel-executivo:alertas")).toBe(false);
-    expect(permitido(p, "metas")).toBe(false);
+    const permitidos = ["vendas", "painel-executivo:kpis:venda"];
+    expect(permitido(permitidos, "vendas:curva-abc")).toBe(true);
+    expect(permitido(permitidos, "painel-executivo")).toBe(true);
+    expect(permitido(permitidos, "painel-executivo:kpis")).toBe(true);
+    expect(permitido(permitidos, "painel-executivo:kpis:venda")).toBe(true);
+    expect(permitido(permitidos, "painel-executivo:kpis:despesas-operacionais")).toBe(false);
+    expect(permitido(permitidos, "painel-executivo:alertas")).toBe(false);
+    expect(permitido(permitidos, "metas")).toBe(false);
   });
 
   it("não confunde prefixos parecidos", () => {
@@ -74,8 +74,8 @@ describe("bloqueio por permissão", () => {
   });
 
   it("a falta de dados da plataforma vem antes da permissão", () => {
-    const b = bloqueio({ plataforma: "fivewin", permitidos: [] }, "metas", ["metas"]);
-    expect(b?.motivo).toBe("plataforma");
+    const bloqueado = bloqueio({ plataforma: "fivewin", permitidos: [] }, "metas", ["metas"]);
+    expect(bloqueado?.motivo).toBe("plataforma");
     expect(bloqueio({ plataforma: "vx", permitidos: [] }, "metas", ["metas"])).toEqual({ motivo: "permissao" });
   });
 });
@@ -89,9 +89,9 @@ describe("textos", () => {
   });
 
   it("título e detalhe do bloqueio", () => {
-    const b = bloqueio(fivewin, "x", ["despesas"])!;
-    expect(tituloDoBloqueio(b)).toBe("Indisponível no Fivewin");
-    expect(detalheDoBloqueio(b)).toBe("O Fivewin ainda não envia ao banco do BI: despesas.");
+    const bloqueado = bloqueio(fivewin, "x", ["despesas"])!;
+    expect(tituloDoBloqueio(bloqueado)).toBe("Indisponível no Fivewin");
+    expect(detalheDoBloqueio(bloqueado)).toBe("O Fivewin ainda não envia ao banco do BI: despesas.");
     expect(tituloDoBloqueio({ motivo: "permissao" })).toBe("Sem permissão");
   });
 });

@@ -13,7 +13,7 @@ function conexaoFalsa({ ultimoId = null, falhaEm = {} } = {}) {
       if (falhaEm[sql]) throw Object.assign(new Error("falha"), { code: falhaEm[sql] });
       return [[]];
     },
-    registradas: () => executadas.filter((e) => /^INSERT INTO migrations/.test(e.sql)).map((e) => e.valores[0]),
+    registradas: () => executadas.filter((execucao) => /^INSERT INTO migrations/.test(execucao.sql)).map((execucao) => execucao.valores[0]),
   };
 }
 const semLog = () => {};
@@ -35,12 +35,12 @@ describe("migracoesPendentes", () => {
   const lista = [1, 2, 3, 4, 5].map((id) => ({ id, queries: ["x"] }));
 
   it("banco sem nenhuma (null ou 0) aplica todas", () => {
-    expect(migracoesPendentes(lista, null).map((m) => m.id)).toEqual([1, 2, 3, 4, 5]);
+    expect(migracoesPendentes(lista, null).map((migracao) => migracao.id)).toEqual([1, 2, 3, 4, 5]);
     expect(migracoesPendentes(lista, 0)).toHaveLength(5);
   });
 
   it("só as de id maior que o último registrado", () => {
-    expect(migracoesPendentes(lista, 3).map((m) => m.id)).toEqual([4, 5]);
+    expect(migracoesPendentes(lista, 3).map((migracao) => migracao.id)).toEqual([4, 5]);
   });
 
   it("banco em dia, ou à frente (o outro BI já aplicou), não aplica nada", () => {
@@ -64,8 +64,8 @@ describe("executar", () => {
   it("cliente novo (do zero): aplica todas, na ordem, e registra cada uma", async () => {
     const conexao = conexaoFalsa({ ultimoId: null });
     const resultado = await executar(conexao, migrations, semLog);
-    expect(resultado.aplicadas).toEqual(migrations.map((m) => m.id));
-    expect(conexao.registradas()).toEqual(migrations.map((m) => m.id));
+    expect(resultado.aplicadas).toEqual(migrations.map((migracao) => migracao.id));
+    expect(conexao.registradas()).toEqual(migrations.map((migracao) => migracao.id));
     expect(conexao.executadas[0].sql).toMatch(/CREATE TABLE IF NOT EXISTS migrations/);
   });
 
@@ -97,7 +97,7 @@ describe("executar", () => {
     const conexao = conexaoFalsa({ falhaEm: { "CREATE TABLE a": "ER_TABLE_EXISTS_ERROR" } });
     const resultado = await executar(conexao, lista, semLog);
     expect(resultado.aplicadas).toEqual([1]);
-    expect(conexao.executadas.some((e) => e.sql === "ALTER TABLE a ADD b")).toBe(true);
+    expect(conexao.executadas.some((execucao) => execucao.sql === "ALTER TABLE a ADD b")).toBe(true);
   });
 
   it("erro de verdade interrompe, e a migration que falhou não é registrada (tenta de novo na próxima subida)", async () => {
@@ -109,6 +109,6 @@ describe("executar", () => {
     const conexao = conexaoFalsa({ falhaEm: { quebrada: "ER_PARSE_ERROR" } });
     await expect(executar(conexao, lista, semLog)).rejects.toThrow("falha");
     expect(conexao.registradas()).toEqual([1]);
-    expect(conexao.executadas.some((e) => e.sql === "nunca")).toBe(false);
+    expect(conexao.executadas.some((execucao) => execucao.sql === "nunca")).toBe(false);
   });
 });

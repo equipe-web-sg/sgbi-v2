@@ -21,15 +21,15 @@ const TIPO: Record<ListaProdutos, "variacao" | "margem"> = {
 };
 
 function colunasProdutos(tipo: "variacao" | "margem", lista: ListaProdutos): Coluna<ProdutoResumo>[] {
-  const venda: Coluna<ProdutoResumo> = { id: "venda", titulo: "Venda", cell: (p) => formatMoeda(p.venda), ordenar: (p) => p.venda };
+  const venda: Coluna<ProdutoResumo> = { id: "venda", titulo: "Venda", cell: (produtoResumo) => formatMoeda(produtoResumo.venda), ordenar: (produtoResumo) => produtoResumo.venda };
   return [
     {
       id: "codigo",
       titulo: "Código",
       align: "left",
       className: "hidden text-muted-foreground @[24rem]:table-cell",
-      cell: (p) => p.codigo,
-      ordenar: (p) => p.codigo,
+      cell: (produtoResumo) => produtoResumo.codigo,
+      ordenar: (produtoResumo) => produtoResumo.codigo,
     },
     {
       id: "produto",
@@ -37,16 +37,16 @@ function colunasProdutos(tipo: "variacao" | "margem", lista: ListaProdutos): Col
       align: "left",
       // Nome longo: corta com reticências e mostra o nome completo no título.
       className: "w-full max-w-0 truncate",
-      cell: (p) => <span title={`${p.codigo} · ${p.descricao} · ${p.departamento}`}>{p.descricao}</span>,
-      ordenar: (p) => p.descricao,
+      cell: (produtoResumo) => <span title={`${produtoResumo.codigo} · ${produtoResumo.descricao} · ${produtoResumo.departamento}`}>{produtoResumo.descricao}</span>,
+      ordenar: (produtoResumo) => produtoResumo.descricao,
     },
     {
       id: "departamento",
       titulo: "Dep.",
       align: "left",
       className: "hidden max-w-24 truncate text-muted-foreground @[26rem]:table-cell",
-      cell: (p) => <span title={p.departamento}>{p.departamento}</span>,
-      ordenar: (p) => p.departamento,
+      cell: (produtoResumo) => <span title={produtoResumo.departamento}>{produtoResumo.departamento}</span>,
+      ordenar: (produtoResumo) => produtoResumo.departamento,
     },
     ...(tipo === "variacao"
       ? [
@@ -54,20 +54,20 @@ function colunasProdutos(tipo: "variacao" | "margem", lista: ListaProdutos): Col
           {
             id: "variacao",
             titulo: "Var. %",
-            cell: (p: ProdutoResumo) => <Delta value={p.variacao} unidade="%" maiorMelhor />,
-            ordenar: (p: ProdutoResumo) => p.variacao,
+            cell: (produtoResumo: ProdutoResumo) => <Delta value={produtoResumo.variacao} unidade="%" maiorMelhor />,
+            ordenar: (produtoResumo: ProdutoResumo) => produtoResumo.variacao,
           },
         ]
       : [
           {
             id: "margem",
             titulo: "Margem",
-            cell: (p: ProdutoResumo) => (
+            cell: (produtoResumo: ProdutoResumo) => (
               <span className={`font-semibold ${lista === "maior-margem" ? "text-success" : "text-error"}`}>
-                {formatPercentual(p.margem)}
+                {formatPercentual(produtoResumo.margem)}
               </span>
             ),
-            ordenar: (p: ProdutoResumo) => p.margem,
+            ordenar: (produtoResumo: ProdutoResumo) => produtoResumo.margem,
           },
           venda,
         ]),
@@ -79,12 +79,12 @@ function Tabela({ produtos, lista, compacta }: { produtos: ProdutoResumo[]; list
     <DataTable
       colunas={colunasProdutos(TIPO[lista], lista)}
       linhas={produtos}
-      chave={(p) => String(p.codigo)}
+      chave={(produtoResumo) => String(produtoResumo.codigo)}
       densidade="compacto"
       cabecalhoFixo={!compacta}
       vazio={null}
       // Telas baixas (ex.: 1536 × 864): o card mostra uma linha a menos para caber sem rolar.
-      classeLinha={(_, __, i) => (compacta && i === 4 ? "[@media(max-height:900px)]:hidden" : "")}
+      classeLinha={(_, __, indice) => (compacta && indice === 4 ? "[@media(max-height:900px)]:hidden" : "")}
     />
   );
 }
@@ -108,7 +108,7 @@ export function ProdutosLista({
     baixarCsv(
       `${titulo.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}.csv`,
       ["Código", "Produto", "Departamento", "Classe", "Venda (R$)", "Venda anterior (R$)", "Var. (%)", "Lucro bruto (R$)", "Margem (%)"],
-      todos.map((p) => [p.codigo, p.descricao, p.departamento, p.classe, p.venda, p.vendaAnterior, p.variacao, p.lucro, p.margem]),
+      todos.map((produtoResumo) => [produtoResumo.codigo, produtoResumo.descricao, produtoResumo.departamento, produtoResumo.classe, produtoResumo.venda, produtoResumo.vendaAnterior, produtoResumo.variacao, produtoResumo.lucro, produtoResumo.margem]),
     );
 
   return (

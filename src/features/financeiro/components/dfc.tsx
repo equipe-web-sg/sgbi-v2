@@ -115,27 +115,27 @@ type LinhaDfc =
   | { tipo: "linha"; chave: string; label: string; fonte: string }
   | { tipo: "total"; chave: string; label: string; fonte: string };
 
-const LINHAS_DFC: LinhaDfc[] = ATIVIDADES.flatMap((a) => [
-  { tipo: "atividade" as const, chave: a.id, label: a.label, cor: a.cor },
-  ...a.grupos.flatMap((g) => [
-    ...(g.label ? [{ tipo: "grupo" as const, chave: `${a.id}-${g.label}`, label: g.label }] : []),
-    ...g.linhas.map(([label, fonte]) => ({ tipo: "linha" as const, chave: `${a.id}-${label}`, label, fonte })),
+const LINHAS_DFC: LinhaDfc[] = ATIVIDADES.flatMap((atividade) => [
+  { tipo: "atividade" as const, chave: atividade.id, label: atividade.label, cor: atividade.cor },
+  ...atividade.grupos.flatMap((grupo) => [
+    ...(grupo.label ? [{ tipo: "grupo" as const, chave: `${atividade.id}-${grupo.label}`, label: grupo.label }] : []),
+    ...grupo.linhas.map(([label, fonte]) => ({ tipo: "linha" as const, chave: `${atividade.id}-${label}`, label, fonte })),
   ]),
 ]);
 
 const LINHAS_TOTAIS: LinhaDfc[] = TOTAIS.map(([label, fonte]) => ({ tipo: "total", chave: label, label, fonte }));
 
 function colunasDfc(mes: string, mesComparacao: string): Coluna<LinhaDfc>[] {
-  const valor = (l: LinhaDfc) => (l.tipo === "grupo" ? null : vazio);
+  const valor = (linhaDfc: LinhaDfc) => (linhaDfc.tipo === "grupo" ? null : vazio);
   return [
     {
       id: "categoria",
       titulo: "Categoria",
       align: "left",
       className: "max-w-72 truncate",
-      cell: (l) => (
-        <span className={l.tipo === "linha" ? "pl-4" : ""} title={l.label}>
-          {l.label}
+      cell: (linhaDfc) => (
+        <span className={linhaDfc.tipo === "linha" ? "pl-4" : ""} title={linhaDfc.label}>
+          {linhaDfc.label}
         </span>
       ),
     },
@@ -146,7 +146,7 @@ function colunasDfc(mes: string, mesComparacao: string): Coluna<LinhaDfc>[] {
       titulo: "Dado necessário",
       align: "left",
       className: "text-xs font-normal text-muted-foreground",
-      cell: (l) => (l.tipo === "linha" || l.tipo === "total" ? l.fonte : null),
+      cell: (linhaDfc) => (linhaDfc.tipo === "linha" || linhaDfc.tipo === "total" ? linhaDfc.fonte : null),
     },
   ];
 }
@@ -169,12 +169,12 @@ function DfcTabela({ mes, mesComparacao }: { mes: string; mesComparacao: string 
           <DataTable
             colunas={colunasDfc(mes, mesComparacao)}
             linhas={LINHAS_DFC}
-            chave={(l) => l.chave}
+            chave={(linhaDfc) => linhaDfc.chave}
             total={LINHAS_TOTAIS}
-            classeLinha={(l) => (l.tipo === "atividade" ? `font-semibold ${l.cor}` : "")}
-            linhaInteira={(l) =>
-              l.tipo === "grupo" ? (
-                <span className="block py-1 pl-4 pr-2.5 text-xs font-semibold text-muted-foreground">{l.label}</span>
+            classeLinha={(linhaDfc) => (linhaDfc.tipo === "atividade" ? `font-semibold ${linhaDfc.cor}` : "")}
+            linhaInteira={(linhaDfc) =>
+              linhaDfc.tipo === "grupo" ? (
+                <span className="block py-1 pl-4 pr-2.5 text-xs font-semibold text-muted-foreground">{linhaDfc.label}</span>
               ) : null
             }
           />
@@ -217,9 +217,9 @@ export function Dfc() {
   const meses =
     dados?.dataMinima && dados.dataMaxima ? mesesDoPeriodo({ inicio: dados.dataMinima, fim: dados.dataMaxima }) : [];
   const mes = mesEscolhido ?? meses.at(-1) ?? "";
-  const [a, m] = mes ? mes.split("-").map(Number) : [0, 0];
+  const [ano, numeroMes] = mes ? mes.split("-").map(Number) : [0, 0];
   const mesComparacao = mes
-    ? new Date(Date.UTC(a, m - 1 - (comparacao === "mes-anterior" ? 1 : 12), 1)).toISOString().slice(0, 7)
+    ? new Date(Date.UTC(ano, numeroMes - 1 - (comparacao === "mes-anterior" ? 1 : 12), 1)).toISOString().slice(0, 7)
     : "";
 
   useAvisos("dfc", [
@@ -324,7 +324,7 @@ export function Dfc() {
               aria-label="Mês"
               className="w-36"
               value={mes}
-              options={[...meses].reverse().map((x) => ({ value: x, label: formatMesAno(x) }))}
+              options={[...meses].reverse().map((mesOpcao) => ({ value: mesOpcao, label: formatMesAno(mesOpcao) }))}
               onValueChange={setMes}
             />
           </Field>
@@ -340,7 +340,7 @@ export function Dfc() {
           <Field label="Filial">
             <FiliaisSelect
               filiais={dados.filiais}
-              value={filiaisEscolhidas ?? dados.filiais.map((f) => f.codigo)}
+              value={filiaisEscolhidas ?? dados.filiais.map((filial) => filial.codigo)}
               onChange={setFiliais}
             />
           </Field>
@@ -348,7 +348,7 @@ export function Dfc() {
             grade={grade}
             rotulos={ROTULOS}
             rotulosBlocos={{
-              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((k) => [k.id, k.titulo])) },
+              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((itemDoBloco) => [itemDoBloco.id, itemDoBloco.titulo])) },
             }}
           />
         </div>

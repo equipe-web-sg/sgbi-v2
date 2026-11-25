@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/tooltip";
 import { detalheDoBloqueio, tituloDoBloqueio, type Bloqueio } from "@/lib/acesso";
 
-const icone = (b: Bloqueio) => (b.motivo === "plataforma" ? mdiDatabaseOffOutline : mdiLockOutline);
+const icone = (bloqueio: Bloqueio) => (bloqueio.motivo === "plataforma" ? mdiDatabaseOffOutline : mdiLockOutline);
 
 /**
  * Card desabilitado (D46): a plataforma não envia os dados que ele usa ou o

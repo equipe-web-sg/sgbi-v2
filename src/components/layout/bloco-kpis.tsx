@@ -65,10 +65,10 @@ function ItemKpi({
   const elRef = useRef<HTMLDivElement | null>(null);
   const inicio = useRef(1);
   const maxW = Math.min(MAX_COLUNAS_ITEM_BLOCO, colunas);
-  const w = Math.min(item.w, colunas);
+  const largura = Math.min(item.largura, colunas);
   const larguraPara = (novo: number) => {
     const limitado = Math.min(Math.max(novo, 1), maxW);
-    if (limitado !== item.w) grade.alterarItemBloco(bloco, item.id, { w: limitado });
+    if (limitado !== item.largura) grade.alterarItemBloco(bloco, item.id, { largura: limitado });
   };
   const botao =
     "flex size-6 items-center justify-center rounded-md border bg-card/95 text-muted-foreground shadow-sm hover:text-foreground";
@@ -82,7 +82,7 @@ function ItemKpi({
       // Largura e posição animam com mola quando outro KPI muda (o arraste em si é do dnd-kit).
       layout={!isDragging}
       transition={MOLA}
-      style={{ gridColumn: `span ${w} / span ${w}` }}
+      style={{ gridColumn: `span ${largura} / span ${largura}` }}
       className={`relative min-h-0 min-w-0 rounded-2xl transition-[box-shadow,scale] duration-300 ${isDragging ? "z-30 scale-[1.02] shadow-2xl" : ""}`}
     >
       <div
@@ -115,19 +115,19 @@ function ItemKpi({
           </Tooltip>
           {maxW > 1 &&
             // Largura pelas bordas esquerda ou direita, em colunas do bloco (1 a 3).
-            (["l", "r"] as const).map((borda) => (
+            (["esquerda", "direita"] as const).map((borda) => (
               <AlcaBorda
                 key={borda}
                 borda={borda}
-                rotulo={`Largura de ${titulo}: ${w} de até ${maxW} colunas (setas)`}
+                rotulo={`Largura de ${titulo}: ${largura} de até ${maxW} colunas (setas)`}
                 aoIniciar={() => {
-                  inicio.current = item.w;
+                  inicio.current = item.largura;
                 }}
                 aoMover={(dx) =>
-                  larguraPara(inicio.current + (borda === "l" ? -1 : 1) * Math.round(dx / (larguraColuna + GAP)))
+                  larguraPara(inicio.current + (borda === "esquerda" ? -1 : 1) * Math.round(dx / (larguraColuna + GAP)))
                 }
-                aoTeclar={(dx) => larguraPara(item.w + (borda === "l" ? -dx : dx))}
-                noTeclado={borda === "r"}
+                aoTeclar={(dx) => larguraPara(item.largura + (borda === "esquerda" ? -dx : dx))}
+                noTeclado={borda === "direita"}
               />
             ))}
         </div>
@@ -140,13 +140,13 @@ function ItemKpi({
 function linhasOcupadas(itens: ItemLayout[], colunas: number) {
   let linhas = 0;
   let usadas = colunas;
-  for (const i of itens) {
-    const w = Math.min(i.w, colunas);
-    if (usadas + w > colunas) {
+  for (const itemLayout of itens) {
+    const largura = Math.min(itemLayout.largura, colunas);
+    if (usadas + largura > colunas) {
       linhas++;
       usadas = 0;
     }
-    usadas += w;
+    usadas += largura;
   }
   return Math.max(linhas, 1);
 }
@@ -193,8 +193,8 @@ export function BlocoKpis({
     : maxColunas;
   const larguraColuna = (medida.largura - (colunas - 1) * GAP) / colunas;
 
-  const porId = new Map(itens.map((i) => [i.id, i]));
-  const visiveis = (grade.layout.blocos[bloco] ?? []).filter((i) => i.visivel && porId.has(i.id));
+  const porId = new Map(itens.map((itemDoBloco) => [itemDoBloco.id, itemDoBloco]));
+  const visiveis = (grade.layout.blocos[bloco] ?? []).filter((itemLayout) => itemLayout.visivel && porId.has(itemLayout.id));
   const linhas = linhasOcupadas(visiveis, colunas);
   // Só na grade (altura fixa): empilhado, o bloco cresce com o conteúdo.
   const alturaItem = grade.larga && medida.altura ? (medida.altura - (linhas - 1) * GAP) / linhas : Infinity;
@@ -219,7 +219,7 @@ export function BlocoKpis({
       {visiveis.map((item, index) => {
         const { titulo, node } = porId.get(item.id)!;
         const chave = `${bloco}:${item.id}`;
-        const b = acesso.bloqueio(chave, fontes[chave]);
+        const bloqueio = acesso.bloqueio(chave, fontes[chave]);
         return (
           <ItemKpi
             key={item.id}
@@ -231,7 +231,7 @@ export function BlocoKpis({
             colunas={colunas}
             larguraColuna={larguraColuna}
           >
-            {b ? <KpiBloqueado titulo={titulo} bloqueio={b} /> : node}
+            {bloqueio ? <KpiBloqueado titulo={titulo} bloqueio={bloqueio} /> : node}
           </ItemKpi>
         );
       })}

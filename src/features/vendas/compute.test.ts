@@ -14,14 +14,14 @@ const dia = (data: string, parcial: Partial<DiaVendas> = {}): DiaVendas => ({
 
 describe("combinarSeries", () => {
   it("preenche todos os dias e junta as fontes (vendas + cupons)", () => {
-    const r = combinarSeries({ inicio: "2026-11-01", fim: "2026-11-02" }, { inicio: "2026-10-30", fim: "2026-10-31" }, [
+    const resultado = combinarSeries({ inicio: "2026-11-01", fim: "2026-11-02" }, { inicio: "2026-10-30", fim: "2026-10-31" }, [
       { atual: [{ data: "2026-11-01", venda: 500, custo: 300 }], anterior: [] },
       { atual: [{ data: "2026-11-01", cupons: 25, itens: 100, vendaPdv: 450 }], anterior: [] },
     ]);
-    expect(r.atual.dias).toHaveLength(2);
-    expect(r.atual.dias[0]).toMatchObject({ venda: 500, custo: 300, cupons: 25, itens: 100, vendaPdv: 450 });
-    expect(r.atual.dias[1].venda).toBeNull();
-    expect(r.anterior.dias.map((d) => d.data)).toEqual(["2026-10-30", "2026-10-31"]);
+    expect(resultado.atual.dias).toHaveLength(2);
+    expect(resultado.atual.dias[0]).toMatchObject({ venda: 500, custo: 300, cupons: 25, itens: 100, vendaPdv: 450 });
+    expect(resultado.atual.dias[1].venda).toBeNull();
+    expect(resultado.anterior.dias.map((diaVendas) => diaVendas.data)).toEqual(["2026-10-30", "2026-10-31"]);
   });
 });
 
@@ -32,18 +32,18 @@ describe("indicadores de vendas", () => {
   ];
 
   it("lucro, margem, ticket médio e itens por cupom", () => {
-    const i = indicadores(dias);
-    expect(i.lucro).toBe(500);
-    expect(i.margem).toBe(25);
-    expect(i.ticketMedio).toBe(20); // 2000 PDV ÷ 100 cupons
-    expect(i.itensPorCupom).toBe(4); // 400 ÷ 100
+    const indicadoresVendas = indicadores(dias);
+    expect(indicadoresVendas.lucro).toBe(500);
+    expect(indicadoresVendas.margem).toBe(25);
+    expect(indicadoresVendas.ticketMedio).toBe(20); // 2000 PDV ÷ 100 cupons
+    expect(indicadoresVendas.itensPorCupom).toBe(4); // 400 ÷ 100
   });
 
   it("sem cupons carregados, ticket e itens por cupom ficam null (não 0)", () => {
-    const i = indicadores([dia("d1", { venda: 100, custo: 50 })]);
-    expect(i.ticketMedio).toBeNull();
-    expect(i.itensPorCupom).toBeNull();
-    expect(i.cobertura.cupons).toBe(0);
+    const indicadoresVendas = indicadores([dia("d1", { venda: 100, custo: 50 })]);
+    expect(indicadoresVendas.ticketMedio).toBeNull();
+    expect(indicadoresVendas.itensPorCupom).toBeNull();
+    expect(indicadoresVendas.cobertura.cupons).toBe(0);
   });
 
   it("sem venda, a margem é null", () => {
@@ -51,9 +51,9 @@ describe("indicadores de vendas", () => {
   });
 
   it("serieDiaria deixa null os dias sem a base", () => {
-    const s = serieDiaria([dia("d1", { venda: 100, custo: 60 }), dia("d2")], (i) => i.margem, "venda");
-    expect(s[0].valor).toBeCloseTo(40);
-    expect(s[1].valor).toBeNull();
+    const serie = serieDiaria([dia("d1", { venda: 100, custo: 60 }), dia("d2")], (indicadoresVendas) => indicadoresVendas.margem, "venda");
+    expect(serie[0].valor).toBeCloseTo(40);
+    expect(serie[1].valor).toBeNull();
   });
 });
 
@@ -70,21 +70,21 @@ describe("calcularDesempenho", () => {
   const cupons: LinhaCuponsNivel = { codigo: 1, cupons: 100, itens: 400, cuponsAnterior: 80, itensAnterior: 240 };
 
   it("calcula venda, lucro, margem, variações e participação", () => {
-    const r = calcularDesempenho(linha, cupons, 5000);
-    expect(r.lucro).toBe(200);
-    expect(r.margem).toBe(20);
-    expect(r.variacaoVenda).toBe(25);
-    expect(r.variacaoLucro).toBeCloseTo(-16.666, 2); // 200 contra 240
-    expect(r.variacaoMargemPp).toBeCloseTo(-10); // 20% contra 30%
-    expect(r.participacao).toBe(20);
+    const resultado = calcularDesempenho(linha, cupons, 5000);
+    expect(resultado.lucro).toBe(200);
+    expect(resultado.margem).toBe(20);
+    expect(resultado.variacaoVenda).toBe(25);
+    expect(resultado.variacaoLucro).toBeCloseTo(-16.666, 2); // 200 contra 240
+    expect(resultado.variacaoMargemPp).toBeCloseTo(-10); // 20% contra 30%
+    expect(resultado.participacao).toBe(20);
   });
 
   it("cupons e itens por cupom, com variação contra o período anterior", () => {
-    const r = calcularDesempenho(linha, cupons, 5000);
-    expect(r.cupons).toBe(100);
-    expect(r.variacaoCupons).toBe(25);
-    expect(r.itensPorCupom).toBe(4);
-    expect(r.variacaoItensPorCupom).toBeCloseTo(33.333, 2); // 4 contra 3
+    const resultado = calcularDesempenho(linha, cupons, 5000);
+    expect(resultado.cupons).toBe(100);
+    expect(resultado.variacaoCupons).toBe(25);
+    expect(resultado.itensPorCupom).toBe(4);
+    expect(resultado.variacaoItensPorCupom).toBeCloseTo(33.333, 2); // 4 contra 3
   });
 
   it("cupons ainda carregando (undefined) é diferente de sem cupons (null)", () => {
@@ -100,9 +100,9 @@ describe("calcularDesempenho", () => {
   });
 
   it("sem venda anterior ou venda total zero, as razões são null", () => {
-    const r = calcularDesempenho({ ...linha, vendaAnterior: 0, custoAnterior: 0 }, cupons, 0);
-    expect(r.variacaoVenda).toBeNull();
-    expect(r.variacaoMargemPp).toBeNull();
-    expect(r.participacao).toBeNull();
+    const resultado = calcularDesempenho({ ...linha, vendaAnterior: 0, custoAnterior: 0 }, cupons, 0);
+    expect(resultado.variacaoVenda).toBeNull();
+    expect(resultado.variacaoMargemPp).toBeNull();
+    expect(resultado.participacao).toBeNull();
   });
 });

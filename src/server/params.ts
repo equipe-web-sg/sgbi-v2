@@ -37,10 +37,10 @@ export function parseFiliais(params: URLSearchParams): number[] {
     .split(",")
     .filter(Boolean)
     .map(Number);
-  if (!filiais.length || filiais.some((f) => !Number.isInteger(f) || f <= 0)) {
+  if (!filiais.length || filiais.some((filial) => !Number.isInteger(filial) || filial <= 0)) {
     throw new ParamError('Parâmetro "filiais" é obrigatório (ex.: 1,2,7).');
   }
-  return [...new Set(filiais)].sort((a, b) => a - b);
+  return [...new Set(filiais)].sort((primeiro, segundo) => primeiro - segundo);
 }
 
 export function parseOrigem(params: URLSearchParams): Origem {

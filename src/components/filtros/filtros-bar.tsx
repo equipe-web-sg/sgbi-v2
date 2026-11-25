@@ -39,9 +39,9 @@ function atalhosPeriodo(dataMaxima: string | null): AtalhoIntervalo[] {
   ];
 }
 
-const contarDias = (p: Periodo) => {
-  const n = daysBetween(p.inicio, p.fim) + 1;
-  return `${n} ${n === 1 ? "dia" : "dias"}`;
+const contarDias = (periodo: Periodo) => {
+  const dias = daysBetween(periodo.inicio, periodo.fim) + 1;
+  return `${dias} ${dias === 1 ? "dia" : "dias"}`;
 };
 
 export function FiltrosBar({
@@ -60,13 +60,13 @@ export function FiltrosBar({
   const comparacao = periodoComparacao(filtros.periodo, filtros.comparacao);
   const atalhosDoPeriodo = atalhosPeriodo(dataMaxima);
   const periodoEhAtalho = atalhosDoPeriodo.some(
-    (a) => a.intervalo.inicio === filtros.periodo.inicio && a.intervalo.fim === filtros.periodo.fim,
+    (atalho) => atalho.intervalo.inicio === filtros.periodo.inicio && atalho.intervalo.fim === filtros.periodo.fim,
   );
-  const intervaloTexto = (p: Periodo) => `${formatData(p.inicio)} – ${formatData(p.fim)}`;
+  const intervaloTexto = (periodo: Periodo) => `${formatData(periodo.inicio)} – ${formatData(periodo.fim)}`;
   // Atalhos de comparação recuam a partir do Período atual.
-  const atalhosComparacao: AtalhoIntervalo<AtalhoComparacao>[] = ATALHOS_COMPARACAO.map((a) => ({
-    ...a,
-    intervalo: resolverAtalhoComparacao(filtros.periodo, a.id),
+  const atalhosComparacao: AtalhoIntervalo<AtalhoComparacao>[] = ATALHOS_COMPARACAO.map((atalho) => ({
+    ...atalho,
+    intervalo: resolverAtalhoComparacao(filtros.periodo, atalho.id),
   }));
 
   return (

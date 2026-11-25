@@ -77,14 +77,14 @@ export function useLayout(tela: string, padrao: Layout, limites: Limites) {
   const larga = useTelaLarga();
   const editando = editandoEstado && larga;
 
-  const atualizar = useCallback((f: (l: Layout) => Layout) => gravar(tela, f(layout)), [tela, layout]);
+  const atualizar = useCallback((transformar: (layoutAtual: Layout) => Layout) => gravar(tela, transformar(layout)), [tela, layout]);
 
   // Esc encerra a edição (se nenhuma janela ou menu estiver aberto: eles tratam o Esc antes).
   useEffect(() => {
     if (!editando) return;
-    const aoTeclar = (e: KeyboardEvent) => {
+    const aoTeclar = (evento: KeyboardEvent) => {
       // Janela, menu ou popover aberto: o Esc é dele.
-      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector('[role="dialog"][data-state="open"]'))
+      if (evento.key !== "Escape" || evento.defaultPrevented || document.querySelector('[role="dialog"][data-state="open"]'))
         return;
       setEditando(false);
     };
@@ -100,19 +100,19 @@ export function useLayout(tela: string, padrao: Layout, limites: Limites) {
       editando,
       larga,
       setEditando,
-      redimensionar: (id: string, desejado: { x: number; y: number; w: number; h: number }, borda: Borda) =>
-        atualizar((l) => redimensionar(l, id, desejado, borda, limites)),
+      redimensionar: (id: string, desejado: { coluna: number; linha: number; largura: number; altura: number }, borda: Borda) =>
+        atualizar((layoutAtual) => redimensionar(layoutAtual, id, desejado, borda, limites)),
       /** Grava um layout já calculado (ex.: o resultado do arraste, igual ao que a prévia mostrou). */
       substituir: (novo: Layout) => atualizar(() => novo),
       /** Troca dois cards de lugar (o que não couber vai para uma linha nova abaixo). */
-      trocar: (idA: string, idB: string) => atualizar((l) => trocar(l, idA, idB, limites)),
-      /** Move o card para a coluna `x` e a linha `y` (quem ficar por baixo desce). */
-      posicionar: (id: string, x: number, y: number) => atualizar((l) => posicionar(l, id, x, y, limites)),
-      ocultar: (id: string) => atualizar((l) => ocultar(l, id)),
-      mostrar: (id: string) => atualizar((l) => mostrar(l, id)),
+      trocar: (idA: string, idB: string) => atualizar((layoutAtual) => trocar(layoutAtual, idA, idB, limites)),
+      /** Move o card para a coluna e a linha indicadas (quem ficar por baixo desce). */
+      posicionar: (id: string, coluna: number, linha: number) => atualizar((layoutAtual) => posicionar(layoutAtual, id, coluna, linha, limites)),
+      ocultar: (id: string) => atualizar((layoutAtual) => ocultar(layoutAtual, id)),
+      mostrar: (id: string) => atualizar((layoutAtual) => mostrar(layoutAtual, id)),
       alterarItemBloco: (bloco: string, id: string, mudanca: Parameters<typeof alterarItemBloco>[3]) =>
-        atualizar((l) => alterarItemBloco(l, bloco, id, mudanca)),
-      ordenarBloco: (bloco: string, ids: string[]) => atualizar((l) => ordenarBloco(l, bloco, ids)),
+        atualizar((layoutAtual) => alterarItemBloco(layoutAtual, bloco, id, mudanca)),
+      ordenarBloco: (bloco: string, ids: string[]) => atualizar((layoutAtual) => ordenarBloco(layoutAtual, bloco, ids)),
       restaurarPadrao: () => gravar(tela, null),
     }),
     [layout, limites, editando, larga, atualizar, padrao, tela],

@@ -86,7 +86,7 @@ async function descricoes(nivel: Nivel) {
   const linhas = await db
     .select({ codigo: tabela.codigo, descricao: sql<string>`trim(${tabela.descricao})` })
     .from(tabela);
-  return new Map(linhas.map((l) => [l.codigo, l.descricao]));
+  return new Map(linhas.map((linha) => [linha.codigo, linha.descricao]));
 }
 
 async function vendaPorNivel(nivel: Nivel, periodo: Periodo, lojas: number[], origem: Origem) {
@@ -124,9 +124,9 @@ export async function getNiveis(
 
   const linhas = new Map<number, LinhaVendaNivel>();
   const linha = (codigo: number, pai: number | null) => {
-    let l = linhas.get(codigo);
-    if (!l) {
-      l = {
+    let existente = linhas.get(codigo);
+    if (!existente) {
+      existente = {
         codigo,
         descricao: nomes.get(codigo) ?? `Código ${codigo}`,
         pai,
@@ -135,18 +135,18 @@ export async function getNiveis(
         vendaAnterior: 0,
         custoAnterior: 0,
       };
-      linhas.set(codigo, l);
+      linhas.set(codigo, existente);
     }
-    return l;
+    return existente;
   };
-  for (const a of atual) Object.assign(linha(a.codigo, a.pai), { venda: a.venda, custo: a.custo });
-  for (const b of comparacao) Object.assign(linha(b.codigo, b.pai), { vendaAnterior: b.venda, custoAnterior: b.custo });
+  for (const registro of atual) Object.assign(linha(registro.codigo, registro.pai), { venda: registro.venda, custo: registro.custo });
+  for (const registroComparacao of comparacao) Object.assign(linha(registroComparacao.codigo, registroComparacao.pai), { vendaAnterior: registroComparacao.venda, custoAnterior: registroComparacao.custo });
 
   return {
     nivel,
     linhas: [...linhas.values()]
-      .filter((l) => l.venda || l.vendaAnterior)
-      .sort((a, b) => b.venda - a.venda),
+      .filter((linhaVendaNivel) => linhaVendaNivel.venda || linhaVendaNivel.vendaAnterior)
+      .sort((registro, registroComparacao) => registroComparacao.venda - registro.venda),
   };
 }
 
@@ -180,9 +180,9 @@ export async function getCuponsNiveis(
     cuponsPorNivel(nivel, periodo, lojas),
     cuponsPorNivel(nivel, anterior, lojas),
   ]);
-  const anteriorPorCodigo = new Map(comparacao.map((c) => [c.codigo, c]));
-  const codigos = new Set([...atual, ...comparacao].map((c) => c.codigo).filter((c) => c != null));
-  const atualPorCodigo = new Map(atual.map((a) => [a.codigo, a]));
+  const anteriorPorCodigo = new Map(comparacao.map((registro) => [registro.codigo, registro]));
+  const codigos = new Set([...atual, ...comparacao].map((registro) => registro.codigo).filter((registro) => registro != null));
+  const atualPorCodigo = new Map(atual.map((registro) => [registro.codigo, registro]));
 
   return {
     nivel,
@@ -231,7 +231,7 @@ export async function getProdutos(
   ]);
 
   return montarProdutos(
-    atual.map((p) => ({ ...p, departamento: nomes.get(p.departamento) ?? `Código ${p.departamento}` })),
-    new Map(comparacao.map((p) => [p.codigo, p.venda])),
+    atual.map((produto) => ({ ...produto, departamento: nomes.get(produto.departamento) ?? `Código ${produto.departamento}` })),
+    new Map(comparacao.map((produto) => [produto.codigo, produto.venda])),
   );
 }

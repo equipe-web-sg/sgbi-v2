@@ -2,19 +2,19 @@ import type { Fonte } from "@/lib/acesso";
 import type { Layout, Limites } from "@/lib/layout";
 
 /**
- * Layout padrão do Painel Executivo (D43): grade de 12 colunas; `h` em
+ * Layout padrão do Painel Executivo (D43): grade de 12 colunas; `altura` em
  * unidades de linha (a unidade é calculada para o padrão ocupar a tela sem rolar).
- * `x`/`y` = coluna e linha do canto superior esquerdo. Ao mudar ids ou a estrutura, suba a `versao` (o salvo antigo é descartado).
+ * `coluna`/`linha` = coluna e linha do canto superior esquerdo. Ao mudar ids ou a estrutura, suba a `versao` (o salvo antigo é descartado).
  */
 export const LAYOUT_PADRAO: Layout = {
-  versao: 3,
+  versao: 4,
   itens: [
-    { id: "kpis", x: 0, y: 0, w: 12, h: 5, visivel: true },
-    { id: "evolucao-venda", x: 0, y: 5, w: 4, h: 6, visivel: true },
-    { id: "evolucao-margem", x: 4, y: 5, w: 4, h: 6, visivel: true },
-    { id: "meta", x: 8, y: 5, w: 4, h: 6, visivel: true },
-    { id: "departamentos", x: 0, y: 11, w: 8, h: 7, visivel: true },
-    { id: "alertas", x: 8, y: 11, w: 4, h: 7, visivel: true },
+    { id: "kpis", coluna: 0, linha: 0, largura: 12, altura: 5, visivel: true },
+    { id: "evolucao-venda", coluna: 0, linha: 5, largura: 4, altura: 6, visivel: true },
+    { id: "evolucao-margem", coluna: 4, linha: 5, largura: 4, altura: 6, visivel: true },
+    { id: "meta", coluna: 8, linha: 5, largura: 4, altura: 6, visivel: true },
+    { id: "departamentos", coluna: 0, linha: 11, largura: 8, altura: 7, visivel: true },
+    { id: "alertas", coluna: 8, linha: 11, largura: 4, altura: 7, visivel: true },
   ],
   blocos: {
     kpis: [
@@ -28,18 +28,18 @@ export const LAYOUT_PADRAO: Layout = {
       "compra-sobre-venda",
       "cancelamentos",
       "descontos",
-    ].map((id) => ({ id, x: 0, y: 0, w: 1, h: 1, visivel: true })),
+    ].map((id) => ({ id, coluna: 0, linha: 0, largura: 1, altura: 1, visivel: true })),
   },
 };
 
 /** Tamanhos mínimo e máximo de cada card (colunas × linhas). */
 export const LIMITES: Limites = {
-  kpis: { min: { w: 4, h: 3 }, max: { w: 12, h: 10 } },
-  "evolucao-venda": { min: { w: 3, h: 4 }, max: { w: 12, h: 12 } },
-  "evolucao-margem": { min: { w: 3, h: 4 }, max: { w: 12, h: 12 } },
-  meta: { min: { w: 3, h: 5 }, max: { w: 8, h: 10 } },
-  departamentos: { min: { w: 5, h: 4 }, max: { w: 12, h: 20 } },
-  alertas: { min: { w: 3, h: 4 }, max: { w: 12, h: 20 } },
+  kpis: { min: { largura: 4, altura: 3 }, max: { largura: 12, altura: 10 } },
+  "evolucao-venda": { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 12 } },
+  "evolucao-margem": { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 12 } },
+  meta: { min: { largura: 3, altura: 5 }, max: { largura: 8, altura: 10 } },
+  departamentos: { min: { largura: 5, altura: 4 }, max: { largura: 12, altura: 20 } },
+  alertas: { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 20 } },
 };
 
 export const ROTULOS: Record<string, string> = {

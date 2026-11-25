@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { evolucaoComparativa } from "./serie";
 
 type Dia = { data: string; valor: number | null };
-const soma = (dias: Dia[]) => dias.reduce((t, d) => t + (d.valor ?? 0), 0);
+const soma = (dias: Dia[]) => dias.reduce((acumulado, dia) => acumulado + (dia.valor ?? 0), 0);
 
 describe("evolucaoComparativa", () => {
   const atual: Dia[] = [
@@ -17,9 +17,9 @@ describe("evolucaoComparativa", () => {
   ];
 
   it("por dia, alinha atual e anterior pela posição", () => {
-    const r = evolucaoComparativa(atual, anterior, "dia", soma);
-    expect(r).toHaveLength(3);
-    expect(r[0]).toEqual({
+    const resultado = evolucaoComparativa(atual, anterior, "dia", soma);
+    expect(resultado).toHaveLength(3);
+    expect(resultado[0]).toEqual({
       chave: "2026-11-02",
       dataAtual: "2026-11-02",
       dataAnterior: "2026-10-26",
@@ -29,23 +29,23 @@ describe("evolucaoComparativa", () => {
   });
 
   it("por semana, soma os dias de cada semana (segunda a domingo)", () => {
-    const r = evolucaoComparativa(atual, anterior, "semana", soma);
-    expect(r.map((p) => p.atual)).toEqual([30, 5]);
-    expect(r.map((p) => p.anterior)).toEqual([3, 4]);
+    const resultado = evolucaoComparativa(atual, anterior, "semana", soma);
+    expect(resultado.map((pontoComparativo) => pontoComparativo.atual)).toEqual([30, 5]);
+    expect(resultado.map((pontoComparativo) => pontoComparativo.anterior)).toEqual([3, 4]);
   });
 
   it("por mês, agrupa por YYYY-MM (o anterior cobre out e nov; o atual só nov)", () => {
-    const r = evolucaoComparativa(atual, anterior, "mes", soma);
-    expect(r).toHaveLength(2);
-    expect(r[0]).toMatchObject({ chave: "2026-11-02", atual: 35, anterior: 3 });
-    expect(r[1]).toMatchObject({ atual: null, anterior: 4, dataAtual: null });
+    const resultado = evolucaoComparativa(atual, anterior, "mes", soma);
+    expect(resultado).toHaveLength(2);
+    expect(resultado[0]).toMatchObject({ chave: "2026-11-02", atual: 35, anterior: 3 });
+    expect(resultado[1]).toMatchObject({ atual: null, anterior: 4, dataAtual: null });
   });
 
   it("quando um lado é mais longo, o outro fica null", () => {
-    const r = evolucaoComparativa(atual, anterior.slice(0, 1), "dia", soma);
-    expect(r[1].anterior).toBeNull();
-    expect(r[1].dataAnterior).toBeNull();
-    expect(r[2].atual).toBe(5);
+    const resultado = evolucaoComparativa(atual, anterior.slice(0, 1), "dia", soma);
+    expect(resultado[1].anterior).toBeNull();
+    expect(resultado[1].dataAnterior).toBeNull();
+    expect(resultado[2].atual).toBe(5);
 
     const inverso = evolucaoComparativa(atual.slice(0, 1), anterior, "dia", soma);
     expect(inverso[2].atual).toBeNull();
@@ -53,7 +53,7 @@ describe("evolucaoComparativa", () => {
   });
 
   it("repassa o null da medida (sem carga)", () => {
-    const r = evolucaoComparativa([{ data: "2026-11-02", valor: null }], [], "dia", () => null);
-    expect(r[0].atual).toBeNull();
+    const resultado = evolucaoComparativa([{ data: "2026-11-02", valor: null }], [], "dia", () => null);
+    expect(resultado[0].atual).toBeNull();
   });
 });

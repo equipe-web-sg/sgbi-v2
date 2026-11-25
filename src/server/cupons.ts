@@ -47,5 +47,5 @@ export async function getCuponsDiarios(periodo: Periodo, lojas: number[]): Promi
     })
     .from(porCupom)
     .groupBy(porCupom.data);
-  return linhas.map((l) => ({ ...l, data: l.data! }));
+  return linhas.map((linha) => ({ ...linha, data: linha.data! }));
 }

@@ -40,9 +40,9 @@ export function ExpandirGrafico({
 }) {
   const [aberto, setAberto] = useState(false);
 
-  const aoTeclar = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
-    e.preventDefault();
+  const aoTeclar = (evento: KeyboardEvent<HTMLDivElement>) => {
+    if (evento.target !== evento.currentTarget || (evento.key !== "Enter" && evento.key !== " ")) return;
+    evento.preventDefault();
     setAberto(true);
   };
 

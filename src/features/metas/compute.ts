@@ -6,19 +6,19 @@ import type { MetaDia, Periodo, RealizadoDia, StatusMargem, StatusMeta } from ".
 
 export { diferencaPp, percentual, somaMetaDiaria };
 
-const dias = (p: Periodo) => daysBetween(p.inicio, p.fim) + 1;
+const dias = (periodo: Periodo) => daysBetween(periodo.inicio, periodo.fim) + 1;
 
 /** Venda e custo somados dos dias de `p` (null quando não há nenhum dia com carga). */
-export function somaRealizado(diasRealizados: RealizadoDia[], p: Periodo | null): { venda: number; custo: number } | null {
-  if (!p) return null;
+export function somaRealizado(diasRealizados: RealizadoDia[], periodo: Periodo | null): { venda: number; custo: number } | null {
+  if (!periodo) return null;
   let venda = 0;
   let custo = 0;
   let encontrou = false;
-  for (const d of diasRealizados) {
-    if (d.data < p.inicio || d.data > p.fim) continue;
+  for (const realizadoDia of diasRealizados) {
+    if (realizadoDia.data < periodo.inicio || realizadoDia.data > periodo.fim) continue;
     encontrou = true;
-    venda += d.venda;
-    custo += d.custo;
+    venda += realizadoDia.venda;
+    custo += realizadoDia.custo;
   }
   return encontrou ? { venda, custo } : null;
 }
@@ -128,9 +128,9 @@ export function curvaCumprimento(
   metas: MetaDia[],
   realizados: RealizadoDia[],
 ): PontoCumprimento[] {
-  const metaPorDia = new Map(metas.map((m) => [m.data, m.meta]));
-  const vendaPorDia = new Map(realizados.map((r) => [r.data, r.venda]));
-  const temMeta = metas.some((m) => m.data >= mes.inicio && m.data <= mes.fim && m.meta > 0);
+  const metaPorDia = new Map(metas.map((metaDia) => [metaDia.data, metaDia.meta]));
+  const vendaPorDia = new Map(realizados.map((realizadoDia) => [realizadoDia.data, realizadoDia.venda]));
+  const temMeta = metas.some((metaDia) => metaDia.data >= mes.inicio && metaDia.data <= mes.fim && metaDia.meta > 0);
 
   let metaAcumulada = 0;
   let realizadoAcumulado = 0;
@@ -140,27 +140,27 @@ export function curvaCumprimento(
     return { data, metaAcumulada, realizadoAcumulado };
   });
 
-  const naReferencia = pontos.find((p) => p.data === referencia);
-  const diasDecorridos = pontos.filter((p) => p.data <= referencia).length;
+  const naReferencia = pontos.find((periodo) => periodo.data === referencia);
+  const diasDecorridos = pontos.filter((periodo) => periodo.data <= referencia).length;
   const ritmo =
     naReferencia && temMeta && naReferencia.metaAcumulada > 0
       ? naReferencia.realizadoAcumulado / naReferencia.metaAcumulada
       : null;
   const mediaDiaria = naReferencia && diasDecorridos ? naReferencia.realizadoAcumulado / diasDecorridos : 0;
 
-  return pontos.map((p, i) => {
-    const depois = naReferencia && p.data >= referencia;
+  return pontos.map((periodo, indice) => {
+    const depois = naReferencia && periodo.data >= referencia;
     let proj: number | null = null;
     if (depois) {
       proj =
         ritmo != null
-          ? naReferencia.realizadoAcumulado + (p.metaAcumulada - naReferencia.metaAcumulada) * ritmo
-          : naReferencia.realizadoAcumulado + mediaDiaria * (i + 1 - diasDecorridos);
+          ? naReferencia.realizadoAcumulado + (periodo.metaAcumulada - naReferencia.metaAcumulada) * ritmo
+          : naReferencia.realizadoAcumulado + mediaDiaria * (indice + 1 - diasDecorridos);
     }
     return {
-      data: p.data,
-      realizado: p.data <= referencia ? p.realizadoAcumulado : null,
-      meta: temMeta ? p.metaAcumulada : null,
+      data: periodo.data,
+      realizado: periodo.data <= referencia ? periodo.realizadoAcumulado : null,
+      meta: temMeta ? periodo.metaAcumulada : null,
       projecao: proj,
     };
   });

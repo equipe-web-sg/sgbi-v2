@@ -1,16 +1,16 @@
 import { addDays, eachDay, startOfWeek } from "@/lib/date";
 import type { Movimento, Periodo, TipoMovimento } from "./types";
 
-const no = (p: Periodo, data: string) => data >= p.inicio && data <= p.fim;
+const no = (periodo: Periodo, data: string) => data >= periodo.inicio && data <= periodo.fim;
 
 /** Entradas e saídas realizadas no período (recebido/pago e cartões liquidados). */
-export function realizadoNoPeriodo(movimentos: Movimento[], p: Periodo) {
+export function realizadoNoPeriodo(movimentos: Movimento[], periodo: Periodo) {
   let entradas = 0;
   let saidas = 0;
-  for (const m of movimentos) {
-    if (m.situacao !== "realizado" || !no(p, m.data)) continue;
-    if (m.tipo === "entrada") entradas += m.valor;
-    else saidas += m.valor;
+  for (const movimento of movimentos) {
+    if (movimento.situacao !== "realizado" || !no(periodo, movimento.data)) continue;
+    if (movimento.tipo === "entrada") entradas += movimento.valor;
+    else saidas += movimento.valor;
   }
   return { entradas, saidas, resultado: entradas - saidas };
 }
@@ -19,10 +19,10 @@ export function realizadoNoPeriodo(movimentos: Movimento[], p: Periodo) {
 export function vencidos(movimentos: Movimento[]) {
   let receber = 0;
   let pagar = 0;
-  for (const m of movimentos) {
-    if (m.situacao !== "vencido") continue;
-    if (m.tipo === "entrada") receber += m.valor;
-    else pagar += m.valor;
+  for (const movimento of movimentos) {
+    if (movimento.situacao !== "vencido") continue;
+    if (movimento.tipo === "entrada") receber += movimento.valor;
+    else pagar += movimento.valor;
   }
   return { receber, pagar };
 }
@@ -36,16 +36,16 @@ export type DiaCaixa = {
   saidasPrevistas: number;
 };
 
-export function porDia(movimentos: Movimento[], p: Periodo): DiaCaixa[] {
+export function porDia(movimentos: Movimento[], periodo: Periodo): DiaCaixa[] {
   const dias = new Map(
-    eachDay(p).map((data) => [data, { data, entradas: 0, saidas: 0, entradasPrevistas: 0, saidasPrevistas: 0 }]),
+    eachDay(periodo).map((data) => [data, { data, entradas: 0, saidas: 0, entradasPrevistas: 0, saidasPrevistas: 0 }]),
   );
-  for (const m of movimentos) {
-    const d = dias.get(m.data);
-    if (!d || m.situacao === "vencido") continue;
-    const previsto = m.situacao === "previsto";
-    if (m.tipo === "entrada") d[previsto ? "entradasPrevistas" : "entradas"] += m.valor;
-    else d[previsto ? "saidasPrevistas" : "saidas"] += m.valor;
+  for (const movimento of movimentos) {
+    const registroDia = dias.get(movimento.data);
+    if (!registroDia || movimento.situacao === "vencido") continue;
+    const previsto = movimento.situacao === "previsto";
+    if (movimento.tipo === "entrada") registroDia[previsto ? "entradasPrevistas" : "entradas"] += movimento.valor;
+    else registroDia[previsto ? "saidasPrevistas" : "saidas"] += movimento.valor;
   }
   return [...dias.values()];
 }
@@ -60,13 +60,13 @@ export type PontoEvolucaoCaixa = DiaCaixa & {
 /** Evolução do mês: barras do dia e resultado acumulado realizado e projetado (P42: sem saldo bancário). */
 export function evolucaoDoMes(movimentos: Movimento[], mes: Periodo, referencia: string): PontoEvolucaoCaixa[] {
   let acumulado = 0;
-  return porDia(movimentos, mes).map((d) => {
-    acumulado += d.entradas - d.saidas + d.entradasPrevistas - d.saidasPrevistas;
+  return porDia(movimentos, mes).map((diaCaixa) => {
+    acumulado += diaCaixa.entradas - diaCaixa.saidas + diaCaixa.entradasPrevistas - diaCaixa.saidasPrevistas;
     // A linha projetada começa na referência, para continuar a realizada sem buraco.
     return {
-      ...d,
-      acumulado: d.data <= referencia ? acumulado : null,
-      projetado: d.data >= referencia ? acumulado : null,
+      ...diaCaixa,
+      acumulado: diaCaixa.data <= referencia ? acumulado : null,
+      projetado: diaCaixa.data >= referencia ? acumulado : null,
     };
   });
 }
@@ -98,46 +98,46 @@ export function fluxoPrevisto(
 ): LinhaPrevista[] {
   const periodo = { inicio: addDays(referencia, 1), fim: addDays(referencia, dias) };
   const grupos = new Map<string, LinhaPrevista>();
-  for (const d of porDia(movimentos, periodo)) {
+  for (const diaCaixa of porDia(movimentos, periodo)) {
     const chave =
-      granularidade === "semana" ? startOfWeek(d.data) : granularidade === "mes" ? d.data.slice(0, 7) : d.data;
-    const g = grupos.get(chave) ?? {
+      granularidade === "semana" ? startOfWeek(diaCaixa.data) : granularidade === "mes" ? diaCaixa.data.slice(0, 7) : diaCaixa.data;
+    const linhaPrevista = grupos.get(chave) ?? {
       chave,
-      inicio: d.data,
-      fim: d.data,
+      inicio: diaCaixa.data,
+      fim: diaCaixa.data,
       entradas: 0,
       saidas: 0,
       saldo: 0,
       acumulado: 0,
       status: "ok" as const,
     };
-    g.fim = d.data;
-    g.entradas += d.entradasPrevistas;
-    g.saidas += d.saidasPrevistas;
-    grupos.set(chave, g);
+    linhaPrevista.fim = diaCaixa.data;
+    linhaPrevista.entradas += diaCaixa.entradasPrevistas;
+    linhaPrevista.saidas += diaCaixa.saidasPrevistas;
+    grupos.set(chave, linhaPrevista);
   }
   let acumulado = 0;
-  return [...grupos.values()].map((g) => {
-    const saldo = g.entradas - g.saidas;
+  return [...grupos.values()].map((linhaPrevista) => {
+    const saldo = linhaPrevista.entradas - linhaPrevista.saidas;
     acumulado += saldo;
-    return { ...g, saldo, acumulado, status: acumulado < 0 ? "critico" : saldo < 0 ? "atencao" : "ok" };
+    return { ...linhaPrevista, saldo, acumulado, status: acumulado < 0 ? "critico" : saldo < 0 ? "atencao" : "ok" };
   });
 }
 
 export type Categoria = { categoria: string; valor: number; participacao: number };
 
 /** Realizado por categoria no período (maiores primeiro; o resto em "Outros"). */
-export function porCategoria(movimentos: Movimento[], p: Periodo, tipo: TipoMovimento, limite: number) {
+export function porCategoria(movimentos: Movimento[], periodo: Periodo, tipo: TipoMovimento, limite: number) {
   const valores = new Map<string, number>();
-  for (const m of movimentos) {
-    if (m.tipo !== tipo || m.situacao !== "realizado" || !no(p, m.data)) continue;
-    valores.set(m.categoria, (valores.get(m.categoria) ?? 0) + m.valor);
+  for (const movimento of movimentos) {
+    if (movimento.tipo !== tipo || movimento.situacao !== "realizado" || !no(periodo, movimento.data)) continue;
+    valores.set(movimento.categoria, (valores.get(movimento.categoria) ?? 0) + movimento.valor);
   }
-  const total = [...valores.values()].reduce((t, v) => t + v, 0);
-  const ordenadas = [...valores.entries()].sort((a, b) => b[1] - a[1]);
+  const total = [...valores.values()].reduce((soma, valor) => soma + valor, 0);
+  const ordenadas = [...valores.entries()].sort((primeiro, segundo) => segundo[1] - primeiro[1]);
   const lista =
     ordenadas.length > limite + 1
-      ? [...ordenadas.slice(0, limite), ["Outros", ordenadas.slice(limite).reduce((t, [, v]) => t + v, 0)] as const]
+      ? [...ordenadas.slice(0, limite), ["Outros", ordenadas.slice(limite).reduce((soma, [, valor]) => soma + valor, 0)] as const]
       : ordenadas;
   return {
     total,
@@ -154,11 +154,11 @@ export type PontoMensal = { mes: string; entradas: number; saidas: number; resul
 /** Entradas e saídas por mês (realizado e em aberto, pela data do movimento). */
 export function porMes(movimentos: Movimento[], meses: string[]): PontoMensal[] {
   const mapa = new Map(meses.map((mes) => [mes, { mes, entradas: 0, saidas: 0, resultado: 0 }]));
-  for (const m of movimentos) {
-    const p = mapa.get(m.data.slice(0, 7));
-    if (!p) continue;
-    if (m.tipo === "entrada") p.entradas += m.valor;
-    else p.saidas += m.valor;
+  for (const movimento of movimentos) {
+    const mensal = mapa.get(movimento.data.slice(0, 7));
+    if (!mensal) continue;
+    if (movimento.tipo === "entrada") mensal.entradas += movimento.valor;
+    else mensal.saidas += movimento.valor;
   }
-  return [...mapa.values()].map((p) => ({ ...p, resultado: p.entradas - p.saidas }));
+  return [...mapa.values()].map((mensal) => ({ ...mensal, resultado: mensal.entradas - mensal.saidas }));
 }

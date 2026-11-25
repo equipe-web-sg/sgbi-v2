@@ -25,7 +25,7 @@ export function Select<T extends string>({
   "aria-label"?: string;
 }) {
   return (
-    <Radix.Root value={value} onValueChange={(v) => onValueChange(v as T)}>
+    <Radix.Root value={value} onValueChange={(valor) => onValueChange(valor as T)}>
       <Radix.Trigger
         id={id}
         aria-label={ariaLabel}

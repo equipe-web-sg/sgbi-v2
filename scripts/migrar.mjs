@@ -27,9 +27,9 @@ export const erroIgnoravel = (codigo) => ERROS_IGNORADOS.includes(codigo);
 
 /** Garante ids únicos, inteiros e crescentes a partir de 1, e ao menos uma query em cada. */
 export function validarMigracoes(lista) {
-  lista.forEach((migracao, i) => {
-    if (migracao.id !== i + 1) {
-      throw new Error(`Migration fora de ordem: esperado o id ${i + 1}, veio ${migracao.id}.`);
+  lista.forEach((migracao, indice) => {
+    if (migracao.id !== indice + 1) {
+      throw new Error(`Migration fora de ordem: esperado o id ${indice + 1}, veio ${migracao.id}.`);
     }
     if (!Array.isArray(migracao.queries) || migracao.queries.length === 0) {
       throw new Error(`Migration ${migracao.id} sem queries.`);
@@ -76,7 +76,7 @@ export async function executar(conexao, lista = migrations, log = console.log) {
     await conexao.query("INSERT INTO migrations(id, created_at) VALUES (?, ?)", [migracao.id, dataDeHoje()]);
   }
 
-  return { aplicadas: pendentes.map((m) => m.id), ultimoId: pendentes.at(-1).id };
+  return { aplicadas: pendentes.map((migracao) => migracao.id), ultimoId: pendentes.at(-1).id };
 }
 
 function configuracao() {

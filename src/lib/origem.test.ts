@@ -12,13 +12,13 @@ describe("origemDoNavegador", () => {
   });
 
   it("atrás de proxy reverso usa X-Forwarded-Host e X-Forwarded-Proto", () => {
-    const h = cabecalhos({ host: "interno:3000", "x-forwarded-host": "bi.cliente.com.br", "x-forwarded-proto": "https" });
-    expect(origemDoNavegador(h, padrao)).toBe("https://bi.cliente.com.br");
+    const cabecalhosDaRequisicao = cabecalhos({ host: "interno:3000", "x-forwarded-host": "bi.cliente.com.br", "x-forwarded-proto": "https" });
+    expect(origemDoNavegador(cabecalhosDaRequisicao, padrao)).toBe("https://bi.cliente.com.br");
   });
 
   it("com vários proxies encadeados usa o primeiro valor", () => {
-    const h = cabecalhos({ "x-forwarded-host": "bi.cliente.com.br, proxy2", "x-forwarded-proto": "https, http" });
-    expect(origemDoNavegador(h, padrao)).toBe("https://bi.cliente.com.br");
+    const cabecalhosDaRequisicao = cabecalhos({ "x-forwarded-host": "bi.cliente.com.br, proxy2", "x-forwarded-proto": "https, http" });
+    expect(origemDoNavegador(cabecalhosDaRequisicao, padrao)).toBe("https://bi.cliente.com.br");
   });
 
   it("sem cabeçalhos cai no endereço do próprio servidor", () => {

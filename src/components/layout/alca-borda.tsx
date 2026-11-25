@@ -4,37 +4,37 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
 import type { Borda } from "@/lib/layout";
 
 const CURSOR: Record<Borda, string> = {
-  l: "ew-resize",
-  r: "ew-resize",
-  t: "ns-resize",
-  b: "ns-resize",
-  tl: "nwse-resize",
-  br: "nwse-resize",
-  tr: "nesw-resize",
-  bl: "nesw-resize",
+  esquerda: "ew-resize",
+  direita: "ew-resize",
+  topo: "ns-resize",
+  base: "ns-resize",
+  "topo-esquerda": "nwse-resize",
+  "base-direita": "nwse-resize",
+  "topo-direita": "nesw-resize",
+  "base-esquerda": "nesw-resize",
 };
 
 // Faixas por toda a borda (fáceis de pegar mesmo em cards pequenos), um pouco para fora do card.
 const POSICAO: Record<Borda, string> = {
-  l: "inset-y-3 -left-1.5 w-3",
-  r: "inset-y-3 -right-1.5 w-3",
-  t: "inset-x-3 -top-1.5 h-3",
-  b: "inset-x-3 -bottom-1.5 h-3",
-  tl: "-left-2 -top-2 size-4",
-  tr: "-right-2 -top-2 size-4",
-  bl: "-bottom-2 -left-2 size-4",
-  br: "-bottom-2 -right-2 size-4",
+  esquerda: "inset-y-3 -left-1.5 w-3",
+  direita: "inset-y-3 -right-1.5 w-3",
+  topo: "inset-x-3 -top-1.5 h-3",
+  base: "inset-x-3 -bottom-1.5 h-3",
+  "topo-esquerda": "-left-2 -top-2 size-4",
+  "topo-direita": "-right-2 -top-2 size-4",
+  "base-esquerda": "-bottom-2 -left-2 size-4",
+  "base-direita": "-bottom-2 -right-2 size-4",
 };
 
 const MARCA: Record<Borda, string> = {
-  l: "h-8 max-h-[60%] w-1",
-  r: "h-8 max-h-[60%] w-1",
-  t: "h-1 w-8 max-w-[60%]",
-  b: "h-1 w-8 max-w-[60%]",
-  tl: "size-2.5",
-  tr: "size-2.5",
-  bl: "size-2.5",
-  br: "size-2.5",
+  esquerda: "h-8 max-h-[60%] w-1",
+  direita: "h-8 max-h-[60%] w-1",
+  topo: "h-1 w-8 max-w-[60%]",
+  base: "h-1 w-8 max-w-[60%]",
+  "topo-esquerda": "size-2.5",
+  "topo-direita": "size-2.5",
+  "base-esquerda": "size-2.5",
+  "base-direita": "size-2.5",
 };
 
 /** Encerra o arraste de redimensionar em andamento (só existe um por vez, na página inteira). */
@@ -78,13 +78,13 @@ export function AlcaBorda({
     if (!alvo) return;
     // Arraste desta alça em andamento (encerrado se a alça sair da tela no meio dele).
     let meu: (() => void) | null = null;
-    const iniciar = (e: PointerEvent) => {
-      if (e.button !== 0 || !e.isPrimary) return;
-      e.preventDefault();
-      e.stopPropagation();
+    const iniciar = (evento: PointerEvent) => {
+      if (evento.button !== 0 || !evento.isPrimary) return;
+      evento.preventDefault();
+      evento.stopPropagation();
       // Um arraste por vez: se o anterior não terminou (soltar fora da janela, por exemplo), encerra antes.
       encerrarAtivo?.();
-      const { clientX: x0, clientY: y0, pointerId } = e;
+      const { clientX: x0, clientY: y0, pointerId } = evento;
       acoes.current.aoIniciar?.();
       // Com o ponteiro capturado, o pointerup chega mesmo fora da janela. Em eventos sintéticos falha: sem problema.
       try {
@@ -131,14 +131,14 @@ export function AlcaBorda({
     };
   }, [borda]);
 
-  const teclar = (e: KeyboardEvent) => {
-    const horizontal = borda.includes("l") || borda.includes("r");
-    const vertical = borda.includes("t") || borda.includes("b");
-    const dx = horizontal ? (({ ArrowRight: 1, ArrowLeft: -1 } as Record<string, number>)[e.key] ?? 0) : 0;
-    const dy = vertical ? (({ ArrowDown: 1, ArrowUp: -1 } as Record<string, number>)[e.key] ?? 0) : 0;
+  const teclar = (evento: KeyboardEvent) => {
+    const horizontal = borda.includes("esquerda") || borda.includes("direita");
+    const vertical = borda.includes("topo") || borda.includes("base");
+    const dx = horizontal ? (({ ArrowRight: 1, ArrowLeft: -1 } as Record<string, number>)[evento.key] ?? 0) : 0;
+    const dy = vertical ? (({ ArrowDown: 1, ArrowUp: -1 } as Record<string, number>)[evento.key] ?? 0) : 0;
     if (!dx && !dy) return;
-    e.preventDefault();
-    e.stopPropagation();
+    evento.preventDefault();
+    evento.stopPropagation();
     aoTeclar(dx, dy);
   };
 
@@ -162,7 +162,7 @@ export function AlcaBorda({
 /** Impede que clicar num controle dentro da alça (o card inteiro) comece um arraste (listener nativo). */
 export function pararArraste(el: HTMLElement | null) {
   if (!el) return;
-  const parar = (e: Event) => e.stopPropagation();
+  const parar = (evento: Event) => evento.stopPropagation();
   el.addEventListener("pointerdown", parar);
   return () => el.removeEventListener("pointerdown", parar);
 }

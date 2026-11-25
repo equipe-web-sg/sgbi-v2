@@ -22,8 +22,8 @@ type Kpi = {
   tom: Tom;
   /** Fonte dos dados: "vendas" (analise gerencial) ou "cupons" (logpdv, só PDV). */
   fonte: "vendas" | "cupons";
-  valor: (i: IndicadoresVendas) => number | null;
-  format: (v: number) => string;
+  valor: (indicador: IndicadoresVendas) => number | null;
+  format: (valor: number) => string;
   /** Variação em % ou em p.p. (percentuais). */
   unidade: "%" | "pp";
   grafico: "bar" | "area";
@@ -37,7 +37,7 @@ const KPIS: Kpi[] = [
     icone: mdiChartBar,
     tom: "green",
     fonte: "vendas",
-    valor: (i) => i.venda,
+    valor: (indicadoresVendas) => indicadoresVendas.venda,
     format: formatMoeda,
     unidade: "%",
     grafico: "bar",
@@ -49,7 +49,7 @@ const KPIS: Kpi[] = [
     icone: mdiPercentOutline,
     tom: "pink",
     fonte: "vendas",
-    valor: (i) => i.margem,
+    valor: (indicadoresVendas) => indicadoresVendas.margem,
     format: formatPercentual,
     unidade: "pp",
     grafico: "area",
@@ -61,7 +61,7 @@ const KPIS: Kpi[] = [
     icone: mdiSackOutline,
     tom: "gold",
     fonte: "vendas",
-    valor: (i) => i.lucro,
+    valor: (indicadoresVendas) => indicadoresVendas.lucro,
     format: formatMoeda,
     unidade: "%",
     grafico: "bar",
@@ -73,7 +73,7 @@ const KPIS: Kpi[] = [
     icone: mdiCartOutline,
     tom: "teal",
     fonte: "cupons",
-    valor: (i) => i.ticketMedio,
+    valor: (indicadoresVendas) => indicadoresVendas.ticketMedio,
     format: formatMoeda,
     unidade: "%",
     grafico: "area",
@@ -85,7 +85,7 @@ const KPIS: Kpi[] = [
     icone: mdiReceiptTextOutline,
     tom: "blue",
     fonte: "cupons",
-    valor: (i) => (i.cobertura.cupons ? i.cupons : null),
+    valor: (indicadoresVendas) => (indicadoresVendas.cobertura.cupons ? indicadoresVendas.cupons : null),
     format: formatInteiro,
     unidade: "%",
     grafico: "bar",
@@ -97,7 +97,7 @@ const KPIS: Kpi[] = [
     icone: mdiBasketOutline,
     tom: "purple",
     fonte: "cupons",
-    valor: (i) => i.itensPorCupom,
+    valor: (indicadoresVendas) => indicadoresVendas.itensPorCupom,
     format: formatDecimal,
     unidade: "%",
     grafico: "area",
@@ -114,16 +114,16 @@ export function kpisDeVendas({
   carregando: Record<"vendas" | "cupons", boolean>;
 }) {
   const dias = resumo.atual.dias;
-  const a = indicadores(dias);
-  const b = indicadores(resumo.anterior.dias);
+  const indicadoresAtuais = indicadores(dias);
+  const indicadoresAnteriores = indicadores(resumo.anterior.dias);
 
   return KPIS.map((kpi): ItemDoBloco => {
     const campoBase = kpi.fonte === "vendas" ? "venda" : "cupons";
     // Venda zerada (ex.: origem Faturamento sem notas) conta como "sem dados".
-    const temAtual = a.cobertura[campoBase] > 0 && a[campoBase] !== 0;
-    const temAnterior = b.cobertura[campoBase] > 0 && b[campoBase] !== 0;
-    const atual = temAtual ? kpi.valor(a) : null;
-    const anterior = temAnterior ? kpi.valor(b) : null;
+    const temAtual = indicadoresAtuais.cobertura[campoBase] > 0 && indicadoresAtuais[campoBase] !== 0;
+    const temAnterior = indicadoresAnteriores.cobertura[campoBase] > 0 && indicadoresAnteriores[campoBase] !== 0;
+    const atual = temAtual ? kpi.valor(indicadoresAtuais) : null;
+    const anterior = temAnterior ? kpi.valor(indicadoresAnteriores) : null;
     return {
       id: kpi.id,
       titulo: kpi.titulo,

@@ -45,7 +45,7 @@ function CaixaPlot({
         <CartesianGrid {...propsGrade(detalhado)} />
         <XAxis
           dataKey="data"
-          tickFormatter={(d: string) => (detalhado ? formatDiaMes(d) : d.slice(8, 10))}
+          tickFormatter={(dia: string) => (detalhado ? formatDiaMes(dia) : dia.slice(8, 10))}
           {...propsEixoX(detalhado)}
         />
         <YAxis tickFormatter={formatMoedaCompacta} {...propsEixoY(detalhado)} width={detalhado ? 96 : 84} />
@@ -68,31 +68,31 @@ function CaixaPlot({
         <Tooltip
           cursor={{ fill: "var(--muted)", opacity: 0.35 }}
           content={({ active, payload }) => {
-            const p = payload?.[0]?.payload as PontoEvolucaoCaixa | undefined;
-            if (!active || !p) return null;
+            const ponto = payload?.[0]?.payload as PontoEvolucaoCaixa | undefined;
+            if (!active || !ponto) return null;
             const linhas = [
-              ["Entradas", p.entradas, "text-success"],
-              ["Entradas previstas", p.entradasPrevistas, "text-success"],
-              ["Saídas", p.saidas, "text-error"],
-              ["Saídas previstas", p.saidasPrevistas, "text-error"],
+              ["Entradas", ponto.entradas, "text-success"],
+              ["Entradas previstas", ponto.entradasPrevistas, "text-success"],
+              ["Saídas", ponto.saidas, "text-error"],
+              ["Saídas previstas", ponto.saidasPrevistas, "text-error"],
             ] as const;
             return (
               <div className="min-w-52 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-lg">
                 <div className="mb-1 font-semibold">
-                  {formatDiaMes(p.data)}
-                  {p.data === referencia && " (referência)"}
+                  {formatDiaMes(ponto.data)}
+                  {ponto.data === referencia && " (referência)"}
                 </div>
                 {linhas
-                  .filter(([, v]) => v)
-                  .map(([nome, v, cor]) => (
+                  .filter(([, valor]) => valor)
+                  .map(([nome, valor, cor]) => (
                     <div key={nome} className="flex justify-between gap-4">
                       <span className="text-muted-foreground">{nome}</span>
-                      <span className={`font-semibold tabular-nums ${cor}`}>{formatMoeda(v)}</span>
+                      <span className={`font-semibold tabular-nums ${cor}`}>{formatMoeda(valor)}</span>
                     </div>
                   ))}
                 <div className="mt-1 flex justify-between gap-4 border-t pt-1">
                   <span className="text-muted-foreground">Resultado acumulado</span>
-                  <span className="font-semibold tabular-nums">{formatMoeda(p.acumulado ?? p.projetado)}</span>
+                  <span className="font-semibold tabular-nums">{formatMoeda(ponto.acumulado ?? ponto.projetado)}</span>
                 </div>
               </div>
             );
@@ -166,13 +166,13 @@ export function EvolucaoCaixaChart({
   pontos: PontoEvolucaoCaixa[];
   carregando: boolean;
 }) {
-  const dados = pontos.map((p) => ({
-    ...p,
-    saidasNeg: -p.saidas,
-    saidasPrevistasNeg: -p.saidasPrevistas,
+  const dados = pontos.map((pontoEvolucaoCaixa) => ({
+    ...pontoEvolucaoCaixa,
+    saidasNeg: -pontoEvolucaoCaixa.saidas,
+    saidasPrevistasNeg: -pontoEvolucaoCaixa.saidasPrevistas,
   }));
   const titulo = `Evolução do Caixa · ${formatMesAno(mes)}`;
-  const temDados = pontos.some((p) => p.entradas || p.saidas || p.entradasPrevistas || p.saidasPrevistas);
+  const temDados = pontos.some((pontoEvolucaoCaixa) => pontoEvolucaoCaixa.entradas || pontoEvolucaoCaixa.saidas || pontoEvolucaoCaixa.entradasPrevistas || pontoEvolucaoCaixa.saidasPrevistas);
 
   return (
     <Card className="min-w-0">

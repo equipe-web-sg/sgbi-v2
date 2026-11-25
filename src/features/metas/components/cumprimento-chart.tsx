@@ -41,7 +41,7 @@ function CumprimentoPlot({
         <CartesianGrid {...propsGrade(detalhado)} />
         <XAxis
           dataKey="data"
-          tickFormatter={(d: string) => (detalhado ? formatDiaMes(d) : d.slice(8, 10))}
+          tickFormatter={(dia: string) => (detalhado ? formatDiaMes(dia) : dia.slice(8, 10))}
           {...propsEixoX(detalhado)}
         />
         <YAxis tickFormatter={formatMoedaCompacta} {...propsEixoY(detalhado)} width={detalhado ? 96 : 84} />
@@ -53,24 +53,24 @@ function CumprimentoPlot({
         />
         <Tooltip
           content={({ active, payload }) => {
-            const p = payload?.[0]?.payload as PontoCumprimento | undefined;
-            if (!active || !p) return null;
-            const base = p.realizado ?? p.projecao;
-            const diferenca = base != null && p.meta != null ? base - p.meta : null;
+            const ponto = payload?.[0]?.payload as PontoCumprimento | undefined;
+            if (!active || !ponto) return null;
+            const base = ponto.realizado ?? ponto.projecao;
+            const diferenca = base != null && ponto.meta != null ? base - ponto.meta : null;
             return (
               <div className="min-w-52 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-lg">
                 <div className="mb-1 font-semibold">
-                  {formatDiaMes(p.data)}
-                  {p.data === referencia && " (referência)"}
+                  {formatDiaMes(ponto.data)}
+                  {ponto.data === referencia && " (referência)"}
                 </div>
-                {SERIES.map((s) =>
-                  p[s.chave] == null ? null : (
-                    <div key={s.chave} className="flex items-center justify-between gap-4">
+                {SERIES.map((serie) =>
+                  ponto[serie.chave] == null ? null : (
+                    <div key={serie.chave} className="flex items-center justify-between gap-4">
                       <span className="flex items-center gap-1.5 text-muted-foreground">
-                        <span className="size-2 rounded-full" style={{ background: s.cor }} />
-                        {s.nome}
+                        <span className="size-2 rounded-full" style={{ background: serie.cor }} />
+                        {serie.nome}
                       </span>
-                      <span className="font-semibold tabular-nums">{formatMoeda(p[s.chave])}</span>
+                      <span className="font-semibold tabular-nums">{formatMoeda(ponto[serie.chave])}</span>
                     </div>
                   ),
                 )}
@@ -78,7 +78,7 @@ function CumprimentoPlot({
                   <div className="mt-1 flex justify-between gap-4 border-t pt-1">
                     <span className="text-muted-foreground">Diferença</span>
                     <span className={`font-semibold tabular-nums ${diferenca >= 0 ? "text-success" : "text-error"}`}>
-                      {formatMoeda(diferenca)} ({formatPercentual(p.meta ? (diferenca / p.meta) * 100 : null)})
+                      {formatMoeda(diferenca)} ({formatPercentual(ponto.meta ? (diferenca / ponto.meta) * 100 : null)})
                     </span>
                   </div>
                 )}
@@ -107,6 +107,7 @@ function CumprimentoPlot({
           dataKey="realizado"
           stroke="var(--chart-1)"
           strokeWidth={2.5}
+          // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
           dot={{ r: detalhado ? 3.5 : 2.5, fill: "var(--chart-1)", stroke: "var(--card)", strokeWidth: 1.5 }}
           connectNulls={false}
           isAnimationActive={false}
@@ -131,12 +132,12 @@ export function CumprimentoChart({
   pontos: PontoCumprimento[];
   carregando: boolean;
 }) {
-  const temDados = pontos.some((p) => p.realizado || p.meta);
-  const temMeta = pontos.some((p) => p.meta);
-  const legenda: ItemLegenda[] = SERIES.filter((s) => temMeta || s.chave !== "meta").map((s) => ({
-    nome: s.nome,
-    cor: s.cor,
-    forma: s.chave === "realizado" ? "linha" : "tracejada",
+  const temDados = pontos.some((pontoCumprimento) => pontoCumprimento.realizado || pontoCumprimento.meta);
+  const temMeta = pontos.some((pontoCumprimento) => pontoCumprimento.meta);
+  const legenda: ItemLegenda[] = SERIES.filter((serie) => temMeta || serie.chave !== "meta").map((serie) => ({
+    nome: serie.nome,
+    cor: serie.cor,
+    forma: serie.chave === "realizado" ? "linha" : "tracejada",
   }));
   const titulo = `Evolução do Cumprimento da Meta · ${formatMesAno(mes)}`;
 

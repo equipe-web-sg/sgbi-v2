@@ -21,7 +21,7 @@ export function Checkbox({
       id={id}
       aria-label={ariaLabel}
       checked={checked}
-      onCheckedChange={(c) => onCheckedChange(c === true)}
+      onCheckedChange={(marcado) => onCheckedChange(marcado === true)}
       className="flex size-4 shrink-0 items-center justify-center rounded border border-input bg-card text-primary-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary"
     >
       <Radix.Indicator>

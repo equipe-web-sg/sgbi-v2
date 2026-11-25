@@ -8,7 +8,7 @@ import {
 import { formatDiaMes } from "@/lib/format";
 import type { AbaPeriodo, PeriodoMeta, Periodo } from "./types";
 
-const min = (a: string, b: string) => (a < b ? a : b);
+const min = (primeiro: string, segundo: string) => (primeiro < segundo ? primeiro : segundo);
 
 /**
  * Data de referência ("hoje" da tela): o último dia carregado, limitado ao mês
@@ -24,7 +24,7 @@ function ateReferencia(periodo: Periodo, referencia: string): Periodo | null {
   return { inicio: periodo.inicio, fim: min(periodo.fim, referencia) };
 }
 
-const intervalo = (p: Periodo) => (p.inicio === p.fim ? formatDiaMes(p.inicio) : `${formatDiaMes(p.inicio)} – ${formatDiaMes(p.fim)}`);
+const intervalo = (periodo: Periodo) => (periodo.inicio === periodo.fim ? formatDiaMes(periodo.inicio) : `${formatDiaMes(periodo.inicio)} – ${formatDiaMes(periodo.fim)}`);
 
 /**
  * As seis abas da tela. A meta é sempre do período inteiro; o realizado vai até

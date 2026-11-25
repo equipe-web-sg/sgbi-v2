@@ -3,28 +3,28 @@ import type { Layout, Limites } from "@/lib/layout";
 
 /**
  * Layout padrão da tela de Metas (D43): grade de 12 colunas.
- * `x`/`y` = coluna e linha do canto superior esquerdo; `h` em unidades de linha (a unidade é calculada para o
+ * `coluna`/`linha` = coluna e linha do canto superior esquerdo; `altura` em unidades de linha (a unidade é calculada para o
  * padrão ocupar a tela sem rolar). Ao mudar ids ou a estrutura, suba a `versao`.
  */
 export const LAYOUT_PADRAO: Layout = {
-  versao: 2,
+  versao: 3,
   itens: [
-    { id: "kpis", x: 0, y: 0, w: 12, h: 3, visivel: true },
-    { id: "cumprimento", x: 0, y: 3, w: 8, h: 4, visivel: true },
-    { id: "atingimento", x: 8, y: 3, w: 4, h: 4, visivel: true },
-    { id: "acompanhamento", x: 0, y: 7, w: 12, h: 6, visivel: true },
-    { id: "metas-periodo", x: 0, y: 13, w: 3, h: 5, visivel: true },
-    { id: "em-risco", x: 3, y: 13, w: 3, h: 5, visivel: true },
-    { id: "melhores", x: 6, y: 13, w: 3, h: 5, visivel: true },
-    { id: "margem", x: 9, y: 13, w: 3, h: 5, visivel: true },
+    { id: "kpis", coluna: 0, linha: 0, largura: 12, altura: 3, visivel: true },
+    { id: "cumprimento", coluna: 0, linha: 3, largura: 8, altura: 4, visivel: true },
+    { id: "atingimento", coluna: 8, linha: 3, largura: 4, altura: 4, visivel: true },
+    { id: "acompanhamento", coluna: 0, linha: 7, largura: 12, altura: 6, visivel: true },
+    { id: "metas-periodo", coluna: 0, linha: 13, largura: 3, altura: 5, visivel: true },
+    { id: "em-risco", coluna: 3, linha: 13, largura: 3, altura: 5, visivel: true },
+    { id: "melhores", coluna: 6, linha: 13, largura: 3, altura: 5, visivel: true },
+    { id: "margem", coluna: 9, linha: 13, largura: 3, altura: 5, visivel: true },
   ],
   blocos: {
     kpis: ["meta", "realizado", "atingimento", "diferenca", "projecao", "status"].map((id) => ({
       id,
-      x: 0,
-      y: 0,
-      w: 1,
-      h: 1,
+      coluna: 0,
+      linha: 0,
+      largura: 1,
+      altura: 1,
       visivel: true,
     })),
   },
@@ -32,14 +32,14 @@ export const LAYOUT_PADRAO: Layout = {
 
 /** Tamanhos mínimo e máximo de cada card (colunas × linhas). */
 export const LIMITES: Limites = {
-  kpis: { min: { w: 4, h: 2 }, max: { w: 12, h: 10 } },
-  cumprimento: { min: { w: 4, h: 4 }, max: { w: 12, h: 12 } },
-  atingimento: { min: { w: 3, h: 4 }, max: { w: 12, h: 14 } },
-  acompanhamento: { min: { w: 6, h: 4 }, max: { w: 12, h: 20 } },
-  "metas-periodo": { min: { w: 3, h: 5 }, max: { w: 6, h: 12 } },
-  "em-risco": { min: { w: 3, h: 4 }, max: { w: 6, h: 12 } },
-  melhores: { min: { w: 3, h: 4 }, max: { w: 6, h: 12 } },
-  margem: { min: { w: 3, h: 4 }, max: { w: 6, h: 12 } },
+  kpis: { min: { largura: 4, altura: 2 }, max: { largura: 12, altura: 10 } },
+  cumprimento: { min: { largura: 4, altura: 4 }, max: { largura: 12, altura: 12 } },
+  atingimento: { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 14 } },
+  acompanhamento: { min: { largura: 6, altura: 4 }, max: { largura: 12, altura: 20 } },
+  "metas-periodo": { min: { largura: 3, altura: 5 }, max: { largura: 6, altura: 12 } },
+  "em-risco": { min: { largura: 3, altura: 4 }, max: { largura: 6, altura: 12 } },
+  melhores: { min: { largura: 3, altura: 4 }, max: { largura: 6, altura: 12 } },
+  margem: { min: { largura: 3, altura: 4 }, max: { largura: 6, altura: 12 } },
 };
 
 export const ROTULOS: Record<string, string> = {

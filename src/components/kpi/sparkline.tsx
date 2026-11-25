@@ -22,6 +22,7 @@ function tooltipSerie(kind: Tipo, format: (value: number) => string) {
   return (
     <Tooltip
       cursor={kind === "bar" ? { fill: "var(--muted)", opacity: 0.4 } : { stroke: "var(--border)" }}
+      // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
       allowEscapeViewBox={{ x: true, y: true }}
       wrapperStyle={{ zIndex: 60 }}
       content={({ active, payload }) => {
@@ -79,7 +80,9 @@ export function SerieDetalhada({
             fillOpacity={0.15}
             connectNulls
             isAnimationActive={false}
+            // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
             dot={{ r: 3, fill: color, stroke: "var(--card)", strokeWidth: 1.5 }}
+            // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
             activeDot={{ r: 5, strokeWidth: 0 }}
           />
         </AreaChart>
@@ -108,7 +111,7 @@ export const eixoDoSparkline = ({ format, formatEixo }: Pick<SparklineProps, "fo
  * `KpiCard`, que lê as propriedades deste elemento.
  */
 export function Sparkline({ data, kind, color, format, label }: SparklineProps) {
-  if (!data.some((p) => p.valor != null)) return null;
+  if (!data.some((ponto) => ponto.valor != null)) return null;
 
   return (
     <div className="h-9 w-12 shrink-0 @[20rem]:w-20">
@@ -132,6 +135,7 @@ export function Sparkline({ data, kind, color, format, label }: SparklineProps) 
                 connectNulls
                 isAnimationActive={false}
                 dot={false}
+                // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
                 activeDot={{ r: 3, strokeWidth: 0 }}
               />
             </AreaChart>

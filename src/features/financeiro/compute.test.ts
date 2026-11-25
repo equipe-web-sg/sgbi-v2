@@ -38,14 +38,14 @@ describe("realizadoNoPeriodo", () => {
 
 describe("vencidos", () => {
   it("separa o que está vencido a receber e a pagar, ignorando as outras situações", () => {
-    const r = vencidos([
+    const resultado = vencidos([
       mov("2026-10-01", "entrada", "vencido", 100),
       mov("2026-10-02", "entrada", "vencido", 50),
       mov("2026-10-03", "saida", "vencido", 70),
       mov("2026-11-03", "saida", "previsto", 999),
       mov("2026-11-03", "entrada", "realizado", 999),
     ]);
-    expect(r).toEqual({ receber: 150, pagar: 70 });
+    expect(resultado).toEqual({ receber: 150, pagar: 70 });
   });
 });
 
@@ -53,7 +53,7 @@ describe("porDia", () => {
   const periodo = { inicio: "2026-11-01", fim: "2026-11-03" };
 
   it("um registro por dia, separando realizado e previsto; vencido fica de fora", () => {
-    const r = porDia(
+    const resultado = porDia(
       [
         mov("2026-11-01", "entrada", "realizado", 10),
         mov("2026-11-01", "entrada", "realizado", 5),
@@ -63,10 +63,10 @@ describe("porDia", () => {
       ],
       periodo,
     );
-    expect(r).toHaveLength(3);
-    expect(r[0]).toMatchObject({ data: "2026-11-01", entradas: 15, saidas: 0 });
-    expect(r[1]).toMatchObject({ saidasPrevistas: 7, entradas: 0, entradasPrevistas: 0 });
-    expect(r[2]).toMatchObject({ entradas: 0, saidas: 0 });
+    expect(resultado).toHaveLength(3);
+    expect(resultado[0]).toMatchObject({ data: "2026-11-01", entradas: 15, saidas: 0 });
+    expect(resultado[1]).toMatchObject({ saidasPrevistas: 7, entradas: 0, entradasPrevistas: 0 });
+    expect(resultado[2]).toMatchObject({ entradas: 0, saidas: 0 });
   });
 });
 
@@ -80,14 +80,14 @@ describe("evolucaoDoMes", () => {
   ];
 
   it("acumulado vai até a referência; projetado começa nela, sem buraco", () => {
-    const r = evolucaoDoMes(movimentos, mes, "2026-11-02");
-    expect(r.map((d) => d.acumulado)).toEqual([100, 70, null, null]);
-    expect(r.map((d) => d.projetado)).toEqual([null, 70, 120, 40]);
+    const resultado = evolucaoDoMes(movimentos, mes, "2026-11-02");
+    expect(resultado.map((pontoEvolucaoCaixa) => pontoEvolucaoCaixa.acumulado)).toEqual([100, 70, null, null]);
+    expect(resultado.map((pontoEvolucaoCaixa) => pontoEvolucaoCaixa.projetado)).toEqual([null, 70, 120, 40]);
   });
 
   it("na data de referência as duas linhas têm o mesmo valor", () => {
-    const r = evolucaoDoMes(movimentos, mes, "2026-11-02");
-    expect(r[1].acumulado).toBe(r[1].projetado);
+    const resultado = evolucaoDoMes(movimentos, mes, "2026-11-02");
+    expect(resultado[1].acumulado).toBe(resultado[1].projetado);
   });
 });
 
@@ -103,33 +103,33 @@ describe("fluxoPrevisto", () => {
   ];
 
   it("começa no dia seguinte à referência e cobre o número de dias pedido", () => {
-    const r = fluxoPrevisto(movimentos, "2026-11-02", 3, "dia");
-    expect(r.map((l) => l.chave)).toEqual(["2026-11-03", "2026-11-04", "2026-11-05"]);
+    const resultado = fluxoPrevisto(movimentos, "2026-11-02", 3, "dia");
+    expect(resultado.map((linhaPrevista) => linhaPrevista.chave)).toEqual(["2026-11-03", "2026-11-04", "2026-11-05"]);
   });
 
   it("acumula o saldo e define o status: acumulado negativo = crítico, dia negativo = atenção", () => {
-    const r = fluxoPrevisto(movimentos, "2026-11-02", 3, "dia");
-    expect(r.map((l) => l.saldo)).toEqual([-100, 300, -10]);
-    expect(r.map((l) => l.acumulado)).toEqual([-100, 200, 190]);
-    expect(r.map((l) => l.status)).toEqual(["critico", "ok", "atencao"]);
+    const resultado = fluxoPrevisto(movimentos, "2026-11-02", 3, "dia");
+    expect(resultado.map((linhaPrevista) => linhaPrevista.saldo)).toEqual([-100, 300, -10]);
+    expect(resultado.map((linhaPrevista) => linhaPrevista.acumulado)).toEqual([-100, 200, 190]);
+    expect(resultado.map((linhaPrevista) => linhaPrevista.status)).toEqual(["critico", "ok", "atencao"]);
   });
 
   it("agrupa por semana (segunda a domingo), com início e fim dentro do intervalo pedido", () => {
-    const r = fluxoPrevisto([], "2026-11-06", 10, "semana");
-    expect(r.map((l) => l.chave)).toEqual(["2026-11-02", "2026-11-09", "2026-11-16"]);
-    expect(r[0]).toMatchObject({ inicio: "2026-11-07", fim: "2026-11-08" });
-    expect(r[2]).toMatchObject({ inicio: "2026-11-16", fim: "2026-11-16" });
+    const resultado = fluxoPrevisto([], "2026-11-06", 10, "semana");
+    expect(resultado.map((linhaPrevista) => linhaPrevista.chave)).toEqual(["2026-11-02", "2026-11-09", "2026-11-16"]);
+    expect(resultado[0]).toMatchObject({ inicio: "2026-11-07", fim: "2026-11-08" });
+    expect(resultado[2]).toMatchObject({ inicio: "2026-11-16", fim: "2026-11-16" });
   });
 
   it("agrupa por mês", () => {
-    const r = fluxoPrevisto([mov("2026-12-01", "entrada", "previsto", 10)], "2026-11-06", 30, "mes");
-    expect(r.map((l) => l.chave)).toEqual(["2026-11", "2026-12"]);
-    expect(r[1].entradas).toBe(10);
+    const resultado = fluxoPrevisto([mov("2026-12-01", "entrada", "previsto", 10)], "2026-11-06", 30, "mes");
+    expect(resultado.map((linhaPrevista) => linhaPrevista.chave)).toEqual(["2026-11", "2026-12"]);
+    expect(resultado[1].entradas).toBe(10);
   });
 
   it("sem movimentos, tudo ok e zerado", () => {
-    const r = fluxoPrevisto([], "2026-11-02", 2, "dia");
-    expect(r.every((l) => l.status === "ok" && l.saldo === 0 && l.acumulado === 0)).toBe(true);
+    const resultado = fluxoPrevisto([], "2026-11-02", 2, "dia");
+    expect(resultado.every((linhaPrevista) => linhaPrevista.status === "ok" && linhaPrevista.saldo === 0 && linhaPrevista.acumulado === 0)).toBe(true);
   });
 });
 
@@ -146,44 +146,44 @@ describe("porCategoria", () => {
   ];
 
   it("ordena da maior para a menor e calcula a participação", () => {
-    const r = porCategoria(saidas, periodo, "saida", 10);
-    expect(r.total).toBe(210);
-    expect(r.categorias.map((c) => c.categoria)).toEqual(["Aluguel", "Energia", "Água", "Internet", "Limpeza"]);
-    expect(r.categorias[0].participacao).toBeCloseTo(47.619, 2);
-    expect(r.categorias.reduce((t, c) => t + c.participacao, 0)).toBeCloseTo(100);
+    const resultado = porCategoria(saidas, periodo, "saida", 10);
+    expect(resultado.total).toBe(210);
+    expect(resultado.categorias.map((categoria) => categoria.categoria)).toEqual(["Aluguel", "Energia", "Água", "Internet", "Limpeza"]);
+    expect(resultado.categorias[0].participacao).toBeCloseTo(47.619, 2);
+    expect(resultado.categorias.reduce((acumulado, categoria) => acumulado + categoria.participacao, 0)).toBeCloseTo(100);
   });
 
   it("acima do limite, o resto vira 'Outros' e o total não muda", () => {
-    const r = porCategoria(saidas, periodo, "saida", 2);
-    expect(r.categorias.map((c) => c.categoria)).toEqual(["Aluguel", "Energia", "Outros"]);
-    expect(r.categorias[2].valor).toBe(60);
-    expect(r.categorias.reduce((t, c) => t + c.valor, 0)).toBe(r.total);
+    const resultado = porCategoria(saidas, periodo, "saida", 2);
+    expect(resultado.categorias.map((categoria) => categoria.categoria)).toEqual(["Aluguel", "Energia", "Outros"]);
+    expect(resultado.categorias[2].valor).toBe(60);
+    expect(resultado.categorias.reduce((acumulado, categoria) => acumulado + categoria.valor, 0)).toBe(resultado.total);
   });
 
   it("quando só sobraria uma categoria para o 'Outros', mostra ela mesma", () => {
-    const r = porCategoria(saidas.slice(0, 3), periodo, "saida", 2);
-    expect(r.categorias.map((c) => c.categoria)).toEqual(["Aluguel", "Energia", "Água"]);
+    const resultado = porCategoria(saidas.slice(0, 3), periodo, "saida", 2);
+    expect(resultado.categorias.map((categoria) => categoria.categoria)).toEqual(["Aluguel", "Energia", "Água"]);
   });
 
   it("agrupa movimentos da mesma categoria", () => {
-    const r = porCategoria(
+    const resultado = porCategoria(
       [mov("2026-11-01", "saida", "realizado", 10, "X"), mov("2026-11-02", "saida", "realizado", 15, "X")],
       periodo,
       "saida",
       5,
     );
-    expect(r.categorias).toEqual([{ categoria: "X", valor: 25, participacao: 100 }]);
+    expect(resultado.categorias).toEqual([{ categoria: "X", valor: 25, participacao: 100 }]);
   });
 
   it("sem movimentos: total zero e participação zero (sem divisão por zero)", () => {
-    const r = porCategoria([], periodo, "entrada", 5);
-    expect(r).toEqual({ total: 0, categorias: [] });
+    const resultado = porCategoria([], periodo, "entrada", 5);
+    expect(resultado).toEqual({ total: 0, categorias: [] });
   });
 });
 
 describe("porMes", () => {
   it("soma entradas e saídas por mês, de qualquer situação, só nos meses pedidos", () => {
-    const r = porMes(
+    const resultado = porMes(
       [
         mov("2026-10-15", "entrada", "realizado", 100),
         mov("2026-10-20", "saida", "vencido", 40),
@@ -192,7 +192,7 @@ describe("porMes", () => {
       ],
       ["2026-10", "2026-11", "2026-12"],
     );
-    expect(r).toEqual([
+    expect(resultado).toEqual([
       { mes: "2026-10", entradas: 100, saidas: 40, resultado: 60 },
       { mes: "2026-11", entradas: 10, saidas: 0, resultado: 10 },
       { mes: "2026-12", entradas: 0, saidas: 0, resultado: 0 },

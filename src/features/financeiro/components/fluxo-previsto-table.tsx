@@ -21,10 +21,10 @@ const GRANULARIDADES: { value: Granularidade; label: string }[] = [
 
 const SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function rotulo(l: LinhaPrevista, g: Granularidade) {
-  if (g === "mes") return formatMesAno(l.chave);
-  if (g === "semana") return `${formatDiaMes(l.inicio)} – ${formatDiaMes(l.fim)}`;
-  return `${SEMANA[parseIso(l.inicio).getUTCDay()]} ${formatDiaMes(l.inicio)}`;
+function rotulo(linhaPrevista: LinhaPrevista, granularidade: Granularidade) {
+  if (granularidade === "mes") return formatMesAno(linhaPrevista.chave);
+  if (granularidade === "semana") return `${formatDiaMes(linhaPrevista.inicio)} – ${formatDiaMes(linhaPrevista.fim)}`;
+  return `${SEMANA[parseIso(linhaPrevista.inicio).getUTCDay()]} ${formatDiaMes(linhaPrevista.inicio)}`;
 }
 
 const STATUS = {
@@ -37,36 +37,36 @@ const ORDEM_STATUS = { ok: 0, atencao: 1, critico: 2 } as const;
 
 function colunasFluxo(granularidade: Granularidade): Coluna<LinhaPrevista>[] {
   return [
-    { id: "data", titulo: "Data", align: "left", className: "font-medium", cell: (l) => rotulo(l, granularidade), ordenar: (l) => l.inicio },
-    { id: "entradas", titulo: "Entradas previstas", cell: (l) => formatMoeda(l.entradas), ordenar: (l) => l.entradas },
-    { id: "saidas", titulo: "Saídas previstas", cell: (l) => formatMoeda(l.saidas), ordenar: (l) => l.saidas },
+    { id: "data", titulo: "Data", align: "left", className: "font-medium", cell: (linhaPrevista) => rotulo(linhaPrevista, granularidade), ordenar: (linhaPrevista) => linhaPrevista.inicio },
+    { id: "entradas", titulo: "Entradas previstas", cell: (linhaPrevista) => formatMoeda(linhaPrevista.entradas), ordenar: (linhaPrevista) => linhaPrevista.entradas },
+    { id: "saidas", titulo: "Saídas previstas", cell: (linhaPrevista) => formatMoeda(linhaPrevista.saidas), ordenar: (linhaPrevista) => linhaPrevista.saidas },
     {
       id: "saldo",
       titulo: `Saldo do ${granularidade === "dia" ? "dia" : "período"}`,
-      cell: (l) => <span className={l.saldo < 0 ? "text-error" : "text-success"}>{formatMoeda(l.saldo)}</span>,
-      ordenar: (l) => l.saldo,
+      cell: (linhaPrevista) => <span className={linhaPrevista.saldo < 0 ? "text-error" : "text-success"}>{formatMoeda(linhaPrevista.saldo)}</span>,
+      ordenar: (linhaPrevista) => linhaPrevista.saldo,
     },
     {
       id: "acumulado",
       titulo: "Acumulado",
       dica: "Acumulado a partir da referência, sem o saldo bancário de hoje",
-      cell: (l) => <span className={l.acumulado < 0 ? "text-error" : ""}>{formatMoeda(l.acumulado)}</span>,
-      ordenar: (l) => l.acumulado,
+      cell: (linhaPrevista) => <span className={linhaPrevista.acumulado < 0 ? "text-error" : ""}>{formatMoeda(linhaPrevista.acumulado)}</span>,
+      ordenar: (linhaPrevista) => linhaPrevista.acumulado,
     },
     {
       id: "status",
       titulo: "Status",
       align: "left",
-      cell: (l) => {
-        const s = STATUS[l.status];
+      cell: (linhaPrevista) => {
+        const situacao = STATUS[linhaPrevista.status];
         return (
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${s.classe}`}>
-            <span className={`size-2 rounded-full ${s.ponto}`} aria-hidden />
-            {s.label}
+          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${situacao.classe}`}>
+            <span className={`size-2 rounded-full ${situacao.ponto}`} aria-hidden />
+            {situacao.label}
           </span>
         );
       },
-      ordenar: (l) => ORDEM_STATUS[l.status],
+      ordenar: (linhaPrevista) => ORDEM_STATUS[linhaPrevista.status],
     },
   ];
 }
@@ -97,7 +97,7 @@ export function FluxoPrevistoTable({
         "Acumulado (R$)",
         "Status",
       ],
-      linhas.map((l) => [rotulo(l, granularidade), l.entradas, l.saidas, l.saldo, l.acumulado, STATUS[l.status].label]),
+      linhas.map((linhaPrevista) => [rotulo(linhaPrevista, granularidade), linhaPrevista.entradas, linhaPrevista.saidas, linhaPrevista.saldo, linhaPrevista.acumulado, STATUS[linhaPrevista.status].label]),
     );
 
   return (
@@ -122,7 +122,7 @@ export function FluxoPrevistoTable({
       </CardHeader>
       <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2" aria-busy={carregando}>
         <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
-          <DataTable colunas={colunasFluxo(granularidade)} linhas={linhas} chave={(l) => l.chave} />
+          <DataTable colunas={colunasFluxo(granularidade)} linhas={linhas} chave={(linhaPrevista) => linhaPrevista.chave} />
         </div>
         <LoadingOverlay ativo={carregando} className="z-20 rounded-b-2xl" />
       </div>

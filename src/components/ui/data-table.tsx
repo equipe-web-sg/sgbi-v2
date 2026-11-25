@@ -51,11 +51,11 @@ const ALINHAMENTO = { left: "text-left", right: "text-right tabular-nums", cente
 
 type Ordenacao = { id: string; direcao: "asc" | "desc" };
 
-function comparar(a: Valor, b: Valor) {
-  if (typeof a === "string" || typeof b === "string") {
-    return String(a).localeCompare(String(b), "pt-BR", { numeric: true, sensitivity: "base" });
+function comparar(valorA: Valor, valorB: Valor) {
+  if (typeof valorA === "string" || typeof valorB === "string") {
+    return String(valorA).localeCompare(String(valorB), "pt-BR", { numeric: true, sensitivity: "base" });
   }
-  return (a as number) - (b as number);
+  return (valorA as number) - (valorB as number);
 }
 
 /**
@@ -94,30 +94,30 @@ export function DataTable<T>({
   densidade?: Densidade;
 }) {
   const [ordenacao, setOrdenacao] = useState<Ordenacao | null>(null);
-  const d = DENSIDADES[densidade];
+  const medidas = DENSIDADES[densidade];
   const totais = total === undefined ? [] : Array.isArray(total) ? total : [total];
-  const doisNiveis = colunas.some((c) => c.subtitulo != null);
-  const colunaOrdenada = colunas.find((c) => c.id === ordenacao?.id && c.ordenar);
+  const doisNiveis = colunas.some((coluna) => coluna.subtitulo != null);
+  const colunaOrdenada = colunas.find((coluna) => coluna.id === ordenacao?.id && coluna.ordenar);
 
   // Títulos do nível 1: colunas vizinhas do mesmo grupo viram um título só.
   const grupos: { chave: string; colunas: Coluna<T>[] }[] = [];
-  for (const c of colunas) {
-    const k = c.grupo ?? (typeof c.titulo === "string" ? c.titulo : c.id);
+  for (const coluna of colunas) {
+    const chaveGrupo = coluna.grupo ?? (typeof coluna.titulo === "string" ? coluna.titulo : coluna.id);
     const ultimo = grupos.at(-1);
-    if (ultimo?.chave === k && doisNiveis && c.subtitulo != null) ultimo.colunas.push(c);
-    else grupos.push({ chave: k, colunas: [c] });
+    if (ultimo?.chave === chaveGrupo && doisNiveis && coluna.subtitulo != null) ultimo.colunas.push(coluna);
+    else grupos.push({ chave: chaveGrupo, colunas: [coluna] });
   }
 
-  const ordenarPor = (c: Coluna<T> | undefined) => {
-    if (!c?.ordenar) return;
+  const ordenarPor = (coluna: Coluna<T> | undefined) => {
+    if (!coluna?.ordenar) return;
     setOrdenacao((atual) => {
-      if (atual?.id !== c.id) {
+      if (atual?.id !== coluna.id) {
         // Texto começa de A a Z; números, do maior para o menor.
-        const amostra = linhas.map(c.ordenar!).find((v) => v != null);
-        return { id: c.id, direcao: typeof amostra === "string" ? "asc" : "desc" };
+        const amostra = linhas.map(coluna.ordenar!).find((valor) => valor != null);
+        return { id: coluna.id, direcao: typeof amostra === "string" ? "asc" : "desc" };
       }
-      const primeira = typeof linhas.map(c.ordenar!).find((v) => v != null) === "string" ? "asc" : "desc";
-      return atual.direcao === primeira ? { id: c.id, direcao: primeira === "asc" ? "desc" : "asc" } : null;
+      const primeira = typeof linhas.map(coluna.ordenar!).find((valor) => valor != null) === "string" ? "asc" : "desc";
+      return atual.direcao === primeira ? { id: coluna.id, direcao: primeira === "asc" ? "desc" : "asc" } : null;
     });
   };
 
@@ -126,16 +126,16 @@ export function DataTable<T>({
     const valor = colunaOrdenada.ordenar;
     const sinal = ordenacao.direcao === "asc" ? 1 : -1;
     // Sem valor (—) sempre por último, em qualquer direção.
-    return [...lista].sort((a, b) => {
-      const va = valor(a);
-      const vb = valor(b);
+    return [...lista].sort((primeiro, segundo) => {
+      const va = valor(primeiro);
+      const vb = valor(segundo);
       if (va == null || vb == null) return va == null ? (vb == null ? 0 : 1) : -1;
       return sinal * comparar(va, vb);
     });
   };
 
-  const estadoDe = (c: Coluna<T> | undefined) =>
-    c && c.id === colunaOrdenada?.id ? ordenacao!.direcao : null;
+  const estadoDe = (coluna: Coluna<T> | undefined) =>
+    coluna && coluna.id === colunaOrdenada?.id ? ordenacao!.direcao : null;
 
   /** Célula de cabeçalho (função de render, não componente: não remonta a cada render). */
   const cabecalho = (
@@ -152,7 +152,7 @@ export function DataTable<T>({
     const alinhar = nivel1 && doisNiveis && align !== "left" ? "center" : align;
     const justificar = { left: "justify-start", right: "justify-end", center: "justify-center" }[alinhar];
     // Divisória do nível 1 na cor do card: o `border` do tema some contra o fundo do cabeçalho.
-    const base = `${d.th} font-medium ${coluna.divisor ? "border-l" : ""} ${nivel1 && doisNiveis ? "shadow-[inset_0_-2px_0_var(--card)]" : ""}`;
+    const base = `${medidas.th} font-medium ${coluna.divisor ? "border-l" : ""} ${nivel1 && doisNiveis ? "shadow-[inset_0_-2px_0_var(--card)]" : ""}`;
     return (
       <th
         key={chaveTh}
@@ -180,25 +180,25 @@ export function DataTable<T>({
     );
   };
 
-  const primeiraOrdenavel = (cs: Coluna<T>[]) => cs.find((c) => c.ordenar);
+  const primeiraOrdenavel = (cs: Coluna<T>[]) => cs.find((coluna) => coluna.ordenar);
 
   const celulas = (linha: T, profundidade: number, ehTotal?: boolean) =>
-    colunas.map((c, i) => {
-      const align = c.align ?? "right";
-      const pad = ehTotal ? d.total : d.td;
-      const classes = `${pad} ${ALINHAMENTO[align]} ${c.divisor ? "border-l" : ""} ${c.className ?? ""}`;
-      if (i === 0 && ehTotal && rotuloTotal !== undefined) {
+    colunas.map((coluna, indice) => {
+      const align = coluna.align ?? "right";
+      const pad = ehTotal ? medidas.total : medidas.td;
+      const classes = `${pad} ${ALINHAMENTO[align]} ${coluna.divisor ? "border-l" : ""} ${coluna.className ?? ""}`;
+      if (indice === 0 && ehTotal && rotuloTotal !== undefined) {
         return (
-          <td key={c.id} className={`${classes} text-left`}>
+          <td key={coluna.id} className={`${classes} text-left`}>
             {rotuloTotal}
           </td>
         );
       }
-      if (i === 0 && arvore) {
+      if (indice === 0 && arvore) {
         const aberto = arvore.abertas.has(chave(linha, profundidade));
         return (
           <td
-            key={c.id}
+            key={coluna.id}
             className={`${classes} font-medium`}
             style={{ paddingLeft: `${0.5 + profundidade * 1.1}rem` }}
           >
@@ -216,27 +216,27 @@ export function DataTable<T>({
               ) : (
                 <span className="w-5 shrink-0" />
               )}
-              <span className={profundidade ? "font-normal" : ""}>{c.cell(linha, profundidade)}</span>
+              <span className={profundidade ? "font-normal" : ""}>{coluna.cell(linha, profundidade)}</span>
             </span>
           </td>
         );
       }
       return (
-        <td key={c.id} className={classes}>
-          {c.cell(linha, profundidade)}
+        <td key={coluna.id} className={classes}>
+          {coluna.cell(linha, profundidade)}
         </td>
       );
     });
 
   function renderLinhas(lista: T[], profundidade: number): ReactNode {
     return ordenadas(lista).map((linha, indice) => {
-      const k = chave(linha, profundidade);
+      const chaveLinha = chave(linha, profundidade);
       const inteira = linhaInteira?.(linha);
-      const aberto = !!arvore?.abertas.has(k);
+      const aberto = !!arvore?.abertas.has(chaveLinha);
       const filhos = aberto && arvore ? arvore.filhos(linha, profundidade) : null;
       const recuo = { paddingLeft: `${2 + profundidade * 1.1}rem` };
       return (
-        <Fragment key={k}>
+        <Fragment key={chaveLinha}>
           <tr
             onClick={aoClicar ? () => aoClicar(linha) : undefined}
             className={`border-t hover:bg-secondary/50 ${profundidade ? "bg-secondary/25" : ""} ${aoClicar ? "cursor-pointer" : ""} ${classeLinha?.(linha, profundidade, indice) ?? ""}`}
@@ -271,27 +271,27 @@ export function DataTable<T>({
 
   return (
     // Sem quebra de linha: a tabela cresce até o conteúdo e o container de quem usa rola na horizontal.
-    <table className={`w-full border-collapse whitespace-nowrap ${d.tabela}`}>
+    <table className={`w-full border-collapse whitespace-nowrap ${medidas.tabela}`}>
       <thead className={`${cabecalhoFixo ? "sticky top-0 z-10" : ""} bg-secondary text-muted-foreground`}>
         <tr>
-          {grupos.map((g) => {
-            const primeira = g.colunas[0];
+          {grupos.map((grupo) => {
+            const primeira = grupo.colunas[0];
             const semSubtitulo = doisNiveis && primeira.subtitulo == null;
             return cabecalho(
               primeira.id,
               primeira,
               primeira.titulo,
-              semSubtitulo || !doisNiveis ? primeira : primeiraOrdenavel(g.colunas),
+              semSubtitulo || !doisNiveis ? primeira : primeiraOrdenavel(grupo.colunas),
               true,
-              { colSpan: g.colunas.length > 1 ? g.colunas.length : undefined, rowSpan: semSubtitulo ? 2 : undefined },
+              { colSpan: grupo.colunas.length > 1 ? grupo.colunas.length : undefined, rowSpan: semSubtitulo ? 2 : undefined },
             );
           })}
         </tr>
         {doisNiveis && (
           <tr>
             {colunas
-              .filter((c) => c.subtitulo != null)
-              .map((c) => cabecalho(c.id, c, c.subtitulo, c, false))}
+              .filter((coluna) => coluna.subtitulo != null)
+              .map((coluna) => cabecalho(coluna.id, coluna, coluna.subtitulo, coluna, false))}
           </tr>
         )}
       </thead>
@@ -307,9 +307,9 @@ export function DataTable<T>({
       </tbody>
       {totais.length > 0 && (
         <tfoot className="sticky bottom-0 bg-card font-semibold">
-          {totais.map((t, i) => (
-            <tr key={i} className={i === 0 ? "border-t-2" : "border-t"}>
-              {celulas(t, 0, true)}
+          {totais.map((valorTotal, indice) => (
+            <tr key={indice} className={indice === 0 ? "border-t-2" : "border-t"}>
+              {celulas(valorTotal, 0, true)}
             </tr>
           ))}
         </tfoot>

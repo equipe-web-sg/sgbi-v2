@@ -3,26 +3,26 @@ import type { Layout, Limites } from "@/lib/layout";
 
 /**
  * Layout padrão da tela Financeiro · DFC (D43): grade de 12 colunas.
- * `x`/`y` = coluna e linha do canto superior esquerdo; `h` em unidades de linha (a unidade é calculada para o
+ * `coluna`/`linha` = coluna e linha do canto superior esquerdo; `altura` em unidades de linha (a unidade é calculada para o
  * padrão ocupar a tela sem rolar). Ao mudar ids ou a estrutura, suba a `versao`.
  */
 export const LAYOUT_PADRAO: Layout = {
-  versao: 2,
+  versao: 3,
   itens: [
-    { id: "kpis", x: 0, y: 0, w: 12, h: 3, visivel: true },
-    { id: "tabela", x: 0, y: 3, w: 7, h: 9, visivel: true },
-    { id: "evolucao", x: 7, y: 3, w: 5, h: 4, visivel: true },
-    { id: "composicao", x: 7, y: 7, w: 5, h: 5, visivel: true },
-    { id: "saldo-conta", x: 0, y: 12, w: 5, h: 6, visivel: true },
-    { id: "movimentacoes", x: 5, y: 12, w: 7, h: 6, visivel: true },
+    { id: "kpis", coluna: 0, linha: 0, largura: 12, altura: 3, visivel: true },
+    { id: "tabela", coluna: 0, linha: 3, largura: 7, altura: 9, visivel: true },
+    { id: "evolucao", coluna: 7, linha: 3, largura: 5, altura: 4, visivel: true },
+    { id: "composicao", coluna: 7, linha: 7, largura: 5, altura: 5, visivel: true },
+    { id: "saldo-conta", coluna: 0, linha: 12, largura: 5, altura: 6, visivel: true },
+    { id: "movimentacoes", coluna: 5, linha: 12, largura: 7, altura: 6, visivel: true },
   ],
   blocos: {
     kpis: ["saldo-inicial", "entradas", "saidas", "geracao", "saldo-final"].map((id) => ({
       id,
-      x: 0,
-      y: 0,
-      w: 1,
-      h: 1,
+      coluna: 0,
+      linha: 0,
+      largura: 1,
+      altura: 1,
       visivel: true,
     })),
   },
@@ -30,12 +30,12 @@ export const LAYOUT_PADRAO: Layout = {
 
 /** Tamanhos mínimo e máximo de cada card (colunas × linhas). */
 export const LIMITES: Limites = {
-  kpis: { min: { w: 4, h: 2 }, max: { w: 12, h: 10 } },
-  tabela: { min: { w: 5, h: 5 }, max: { w: 12, h: 20 } },
-  evolucao: { min: { w: 3, h: 4 }, max: { w: 12, h: 14 } },
-  composicao: { min: { w: 3, h: 4 }, max: { w: 12, h: 14 } },
-  "saldo-conta": { min: { w: 3, h: 4 }, max: { w: 12, h: 14 } },
-  movimentacoes: { min: { w: 3, h: 4 }, max: { w: 12, h: 14 } },
+  kpis: { min: { largura: 4, altura: 2 }, max: { largura: 12, altura: 10 } },
+  tabela: { min: { largura: 5, altura: 5 }, max: { largura: 12, altura: 20 } },
+  evolucao: { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 14 } },
+  composicao: { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 14 } },
+  "saldo-conta": { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 14 } },
+  movimentacoes: { min: { largura: 3, altura: 4 }, max: { largura: 12, altura: 14 } },
 };
 
 export const ROTULOS: Record<string, string> = {

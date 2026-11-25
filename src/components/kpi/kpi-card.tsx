@@ -91,14 +91,14 @@ export function KpiCard({
    */
   linhasLongas?: boolean;
 }) {
-  const t = TONS[tom];
+  const estilo = TONS[tom];
   const [aberto, setAberto] = useState(false);
   const serie = isValidElement(grafico) ? (grafico as ReactElement<SparklineProps>).props : null;
-  const comSerie = !!serie?.data?.some((p) => p.valor != null);
+  const comSerie = !!serie?.data?.some((ponto) => ponto.valor != null);
 
-  const aoTeclar = (e: KeyboardEvent<HTMLElement>) => {
-    if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
-    e.preventDefault();
+  const aoTeclar = (evento: KeyboardEvent<HTMLElement>) => {
+    if (evento.target !== evento.currentTarget || (evento.key !== "Enter" && evento.key !== " ")) return;
+    evento.preventDefault();
     setAberto(true);
   };
 
@@ -117,15 +117,15 @@ export function KpiCard({
         {/* Altura mínima (bloco da grade personalizável): só o ícone colorido e o nome. */}
         <div className="flex min-w-0 items-center gap-2 [[data-altura=minima]_&]:flex-1">
           <div
-            className={`flex size-7 shrink-0 items-center justify-center rounded-lg [[data-altura=minima]_&]:size-6 ${t.bg}`}
+            className={`flex size-7 shrink-0 items-center justify-center rounded-lg [[data-altura=minima]_&]:size-6 ${estilo.bg}`}
           >
-            <Icon path={icone} size={0.75} className={t.icon} aria-hidden />
+            <Icon path={icone} size={0.75} className={estilo.icon} aria-hidden />
           </div>
           <h3 className="min-w-0 truncate text-[13px] font-semibold" title={titulo}>
             {titulo}
           </h3>
           {/* O balão de ajuda não abre o detalhe. */}
-          <span onClick={(e) => e.stopPropagation()} className="contents [[data-altura=minima]_&]:hidden">
+          <span onClick={(evento) => evento.stopPropagation()} className="contents [[data-altura=minima]_&]:hidden">
             <InfoTooltip texto={ajuda} />
           </span>
           {badge && (
@@ -162,8 +162,8 @@ export function KpiCard({
         <DialogContent titulo={titulo} descricao={ajuda} className="max-w-3xl">
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
             <div className="flex items-center gap-3">
-              <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${t.bg}`}>
-                <Icon path={icone} size={1} className={t.icon} aria-hidden />
+              <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${estilo.bg}`}>
+                <Icon path={icone} size={1} className={estilo.icon} aria-hidden />
               </div>
               <div className="min-w-0">
                 <div className="text-2xl font-bold tabular-nums tracking-tight">{valor}</div>

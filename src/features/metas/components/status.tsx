@@ -16,25 +16,25 @@ const MARGEM: Record<StatusMargem, { label: string; ponto: string; fundo: string
   "sem-meta": { label: "Sem meta", ponto: "bg-muted-foreground", fundo: "bg-secondary", texto: "text-muted-foreground" },
 };
 
-export const ROTULO_STATUS = Object.fromEntries(Object.entries(META).map(([k, v]) => [k, v.label])) as Record<StatusMeta, string>;
+export const ROTULO_STATUS = Object.fromEntries(Object.entries(META).map(([chave, configuracao]) => [chave, configuracao.label])) as Record<StatusMeta, string>;
 
-function Selo({ s, destaque, compacto }: { s: (typeof META)[StatusMeta]; destaque?: boolean; compacto?: boolean }) {
+function Selo({ configuracao, destaque, compacto }: { configuracao: (typeof META)[StatusMeta]; destaque?: boolean; compacto?: boolean }) {
   if (compacto) {
     // Tabelas pequenas: só o ponto e o texto, sem fundo (linha mais baixa).
     return (
-      <span className={`inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-medium ${s.texto}`} title={s.label}>
-        <span className={`size-2 rounded-full ${s.ponto}`} aria-hidden />
+      <span className={`inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-medium ${configuracao.texto}`} title={configuracao.label}>
+        <span className={`size-2 rounded-full ${configuracao.ponto}`} aria-hidden />
         {/* Card estreito (container query): só o ponto; o texto fica no título e para leitores de tela. */}
-        <span className="sr-only @[26rem]:not-sr-only">{s.label}</span>
+        <span className="sr-only @[26rem]:not-sr-only">{configuracao.label}</span>
       </span>
     );
   }
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 align-middle text-xs font-medium ${s.fundo} ${s.texto} ${destaque ? "px-3 py-1 text-sm font-semibold" : ""}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 align-middle text-xs font-medium ${configuracao.fundo} ${configuracao.texto} ${destaque ? "px-3 py-1 text-sm font-semibold" : ""}`}
     >
-      <span className={`size-1.5 rounded-full ${s.ponto}`} aria-hidden />
-      {s.label}
+      <span className={`size-1.5 rounded-full ${configuracao.ponto}`} aria-hidden />
+      {configuracao.label}
     </span>
   );
 }
@@ -49,17 +49,17 @@ export function StatusMetaBadge({
   destaque?: boolean;
   compacto?: boolean;
 }) {
-  return <Selo s={META[status]} destaque={destaque} compacto={compacto} />;
+  return <Selo configuracao={META[status]} destaque={destaque} compacto={compacto} />;
 }
 
 export function StatusMargemBadge({ status }: { status: StatusMargem }) {
-  return <Selo s={MARGEM[status]} />;
+  return <Selo configuracao={MARGEM[status]} />;
 }
 
 /** Situações possíveis da margem, para a legenda de pontos no cabeçalho da tabela. */
-export const PONTOS_MARGEM = (["ok", "atencao", "critico"] as const).map((k) => ({
-  label: MARGEM[k].label,
-  classe: MARGEM[k].ponto,
+export const PONTOS_MARGEM = (["ok", "atencao", "critico"] as const).map((chave) => ({
+  label: MARGEM[chave].label,
+  classe: MARGEM[chave].ponto,
 }));
 
 /** Posição de cada situação para ordenar as tabelas (da melhor para a pior). */

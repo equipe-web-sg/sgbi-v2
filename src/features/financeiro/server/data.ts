@@ -27,7 +27,7 @@ const empresa = {
   descricao: sql<string | null>`trim(${cartoesEmpresas.descricaoEmpresa})`,
   codigo: cartoesVendas.codigoEmpresa,
 };
-const nomeEmpresa = (e: { descricao: string | null; codigo: number | null }) => e.descricao || `Cartão ${e.codigo}`;
+const nomeEmpresa = (registroEmpresa: { descricao: string | null; codigo: number | null }) => registroEmpresa.descricao || `Cartão ${registroEmpresa.codigo}`;
 
 function situacaoEmAberto(vencimento: string, referencia: string): SituacaoMovimento {
   return vencimento <= referencia ? "vencido" : "previsto";
@@ -87,61 +87,61 @@ export async function getMovimentos(periodo: Periodo, referencia: string, lojas:
   const movimentos: Movimento[] = [];
   const dentro = (data: string | null) => !!data && data > "1900-01-01" && data >= inicio && data <= fim;
 
-  for (const c of cartoes) {
-    if (!dentro(c.data)) continue;
+  for (const cartao of cartoes) {
+    if (!dentro(cartao.data)) continue;
     movimentos.push({
-      data: c.data!,
+      data: cartao.data!,
       tipo: "entrada",
       fonte: "cartao",
-      categoria: nomeEmpresa(c),
-      situacao: c.data! <= referencia ? "realizado" : "previsto",
-      valor: c.valor,
+      categoria: nomeEmpresa(cartao),
+      situacao: cartao.data! <= referencia ? "realizado" : "previsto",
+      valor: cartao.valor,
     });
   }
 
-  for (const r of receber) {
+  for (const contaReceber of receber) {
     // Recebido até a referência: realizado no dia do recebimento; senão, em aberto no vencimento.
-    const recebido = dentro(r.recebimento) && r.recebimento! <= referencia;
+    const recebido = dentro(contaReceber.recebimento) && contaReceber.recebimento! <= referencia;
     if (recebido) {
       movimentos.push({
-        data: r.recebimento!,
+        data: contaReceber.recebimento!,
         tipo: "entrada",
         fonte: "receber",
         categoria: CATEGORIA_RECEBER,
         situacao: "realizado",
-        valor: r.valorRecebido ?? 0,
+        valor: contaReceber.valorRecebido ?? 0,
       });
-    } else if (dentro(r.vencimento)) {
+    } else if (dentro(contaReceber.vencimento)) {
       movimentos.push({
-        data: r.vencimento!,
+        data: contaReceber.vencimento!,
         tipo: "entrada",
         fonte: "receber",
         categoria: CATEGORIA_RECEBER,
-        situacao: situacaoEmAberto(r.vencimento!, referencia),
-        valor: r.valorDocumento ?? 0,
+        situacao: situacaoEmAberto(contaReceber.vencimento!, referencia),
+        valor: contaReceber.valorDocumento ?? 0,
       });
     }
   }
 
-  for (const p of pagar) {
-    const pago = dentro(p.pagamento) && p.pagamento! <= referencia;
+  for (const contaPagar of pagar) {
+    const pago = dentro(contaPagar.pagamento) && contaPagar.pagamento! <= referencia;
     if (pago) {
       movimentos.push({
-        data: p.pagamento!,
+        data: contaPagar.pagamento!,
         tipo: "saida",
         fonte: "pagar",
-        categoria: p.categoria,
+        categoria: contaPagar.categoria,
         situacao: "realizado",
-        valor: p.pago,
+        valor: contaPagar.pago,
       });
-    } else if (dentro(p.vencimento)) {
+    } else if (dentro(contaPagar.vencimento)) {
       movimentos.push({
-        data: p.vencimento!,
+        data: contaPagar.vencimento!,
         tipo: "saida",
         fonte: "pagar",
-        categoria: p.categoria,
-        situacao: situacaoEmAberto(p.vencimento!, referencia),
-        valor: p.aPagar,
+        categoria: contaPagar.categoria,
+        situacao: situacaoEmAberto(contaPagar.vencimento!, referencia),
+        valor: contaPagar.aPagar,
       });
     }
   }
@@ -196,36 +196,36 @@ export async function getCompromissos(referencia: string, dias: number, lojas: n
   // Em aberto na referência: sem baixa, ou baixado depois dela.
   const emAberto = (baixa: string | null) => !baixa || baixa <= "1900-01-01" || baixa > referencia;
   const lista: Compromisso[] = [
-    ...cartoes.map((c) => ({
-      data: c.data!,
+    ...cartoes.map((cartao) => ({
+      data: cartao.data!,
       tipo: "entrada" as const,
       fonte: "cartao" as const,
-      descricao: `Cartão · ${nomeEmpresa(c)}`,
-      valor: c.valor,
+      descricao: `Cartão · ${nomeEmpresa(cartao)}`,
+      valor: cartao.valor,
       situacao: "previsto" as const,
     })),
     ...receber
-      .filter((r) => emAberto(r.recebimento))
-      .map((r) => ({
-        data: r.data!,
+      .filter((contaReceber) => emAberto(contaReceber.recebimento))
+      .map((contaReceber) => ({
+        data: contaReceber.data!,
         tipo: "entrada" as const,
         fonte: "receber" as const,
-        descricao: r.descricao,
-        valor: r.valor,
-        situacao: situacaoEmAberto(r.data!, referencia) as "previsto" | "vencido",
+        descricao: contaReceber.descricao,
+        valor: contaReceber.valor,
+        situacao: situacaoEmAberto(contaReceber.data!, referencia) as "previsto" | "vencido",
       })),
     ...pagar
-      .filter((p) => emAberto(p.pagamento))
-      .map((p) => ({
-        data: p.data!,
+      .filter((contaPagar) => emAberto(contaPagar.pagamento))
+      .map((contaPagar) => ({
+        data: contaPagar.data!,
         tipo: "saida" as const,
         fonte: "pagar" as const,
-        descricao: p.descricao,
-        valor: p.valor,
-        situacao: situacaoEmAberto(p.data!, referencia) as "previsto" | "vencido",
+        descricao: contaPagar.descricao,
+        valor: contaPagar.valor,
+        situacao: situacaoEmAberto(contaPagar.data!, referencia) as "previsto" | "vencido",
       })),
   ];
-  return lista.filter((c) => c.valor).sort((a, b) => a.data.localeCompare(b.data) || b.valor - a.valor);
+  return lista.filter((compromisso) => compromisso.valor).sort((primeiro, segundo) => primeiro.data.localeCompare(segundo.data) || segundo.valor - primeiro.valor);
 }
 
 /** Prazos médios (dias, ponderados pelo valor) dos títulos emitidos/vendidos no período. */
@@ -235,8 +235,8 @@ export async function getPrazos(periodo: Periodo, lojas: number[]): Promise<Praz
   cacheTag(CACHE_TAG);
 
   const media = (dias: SQL, valor: SQL | AnyColumn) =>
-    sql<number | null>`sum(${dias} * ${valor}) / nullif(sum(${valor}), 0)`.mapWith((v) =>
-      v == null ? null : Number(v),
+    sql<number | null>`sum(${dias} * ${valor}) / nullif(sum(${valor}), 0)`.mapWith((bruto) =>
+      bruto == null ? null : Number(bruto),
     );
 
   const [[cartoes], [receber], [pagar]] = await Promise.all([

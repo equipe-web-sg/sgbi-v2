@@ -46,7 +46,7 @@ export function BarraEdicao({
   }
 
   const escondidos = ocultos(grade.layout);
-  const totalOcultos = escondidos.cards.length + Object.values(escondidos.blocos).reduce((t, ids) => t + ids.length, 0);
+  const totalOcultos = escondidos.cards.length + Object.values(escondidos.blocos).reduce((acumulado, ids) => acumulado + ids.length, 0);
 
   return (
     <div
@@ -154,7 +154,7 @@ function Opcao({
   return (
     <li>
       <label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-secondary">
-        <Checkbox checked={visivel} onCheckedChange={(c) => (c ? onMostrar() : onOcultar())} />
+        <Checkbox checked={visivel} onCheckedChange={(marcado) => (marcado ? onMostrar() : onOcultar())} />
         <span className="truncate">{rotulo}</span>
       </label>
     </li>

@@ -36,5 +36,6 @@ export function animarDesde(el: HTMLElement, de: DOMRect, para?: { left: number;
   if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
   // Já na posição de partida: nenhum quadro mostra o card no destino antes de a animação começar.
   el.style.transform = `translate(${dx}px, ${dy}px)`;
+  // eslint-disable-next-line id-length -- nomes da API do Motion (r, x, y)
   void animate(el, { x: [dx, 0], y: [dy, 0] }, MOLA);
 }

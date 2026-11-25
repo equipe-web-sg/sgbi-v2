@@ -42,28 +42,28 @@ function MensalPlot({
         <CartesianGrid {...propsGrade(detalhado)} />
         <XAxis
           dataKey="mes"
-          tickFormatter={(m: string) => (detalhado ? formatMesAno(m) : formatMesAno(m).replace("/20", "/"))}
+          tickFormatter={(mes: string) => (detalhado ? formatMesAno(mes) : formatMesAno(mes).replace("/20", "/"))}
           {...propsEixoX(detalhado)}
         />
         <YAxis tickFormatter={formatMoedaCompacta} {...propsEixoY(detalhado)} width={detalhado ? 92 : 76} />
         <Tooltip
           cursor={{ fill: "var(--muted)", opacity: 0.35 }}
           content={({ active, payload }) => {
-            const p = payload?.[0]?.payload as PontoMensal | undefined;
-            if (!active || !p) return null;
+            const ponto = payload?.[0]?.payload as PontoMensal | undefined;
+            if (!active || !ponto) return null;
             return (
               <div className="min-w-44 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-lg">
-                <div className="mb-1 font-semibold">{formatMesAno(p.mes)}</div>
+                <div className="mb-1 font-semibold">{formatMesAno(ponto.mes)}</div>
                 {(
                   [
-                    ["Entradas", p.entradas, "text-success"],
-                    ["Saídas", p.saidas, "text-error"],
-                    ["Resultado", p.resultado, p.resultado >= 0 ? "text-success" : "text-error"],
+                    ["Entradas", ponto.entradas, "text-success"],
+                    ["Saídas", ponto.saidas, "text-error"],
+                    ["Resultado", ponto.resultado, ponto.resultado >= 0 ? "text-success" : "text-error"],
                   ] as const
-                ).map(([nome, v, cor]) => (
+                ).map(([nome, valor, cor]) => (
                   <div key={nome} className="flex justify-between gap-4">
                     <span className="text-muted-foreground">{nome}</span>
-                    <span className={`font-semibold tabular-nums ${cor}`}>{formatMoeda(v)}</span>
+                    <span className={`font-semibold tabular-nums ${cor}`}>{formatMoeda(valor)}</span>
                   </div>
                 ))}
               </div>
@@ -88,6 +88,7 @@ function MensalPlot({
           dataKey="resultado"
           stroke="var(--chart-1)"
           strokeWidth={2}
+          // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
           dot={{ r: detalhado ? 4 : 2.5 }}
           isAnimationActive={false}
         />
@@ -106,7 +107,7 @@ const LEGENDA_MENSAL: ItemLegenda[] = [
 
 /** Entradas, saídas e resultado por mês (12 meses até o mês de referência). */
 export function EvolucaoMensalChart({ pontos, carregando }: { pontos: PontoMensal[]; carregando: boolean }) {
-  const temDados = pontos.some((p) => p.entradas || p.saidas);
+  const temDados = pontos.some((pontoMensal) => pontoMensal.entradas || pontoMensal.saidas);
   return (
     <Card className="min-w-0">
       <CardHeader>
@@ -150,32 +151,32 @@ export type Indicadores = {
   previstoSaidas: number;
 };
 
-const dias = (v: number | null) => (v == null ? "—" : `${formatDecimal(v)} dias`);
+const dias = (valor: number | null) => (valor == null ? "—" : `${formatDecimal(valor)} dias`);
 
 /**
  * Indicadores calculáveis com os títulos. Ciclo de caixa, capital de giro e caixa
  * líquido dependem de estoque e saldo bancário (P48) e não aparecem.
  */
 export function IndicadoresCard({ indicadores, carregando }: { indicadores: Indicadores; carregando: boolean }) {
-  const i = indicadores;
+  const dadosIndicadores = indicadores;
   const linhas: [string, string, string, string?][] = [
-    ["Prazo médio de recebimento (cartões)", dias(i.prazoCartoes), "Venda → liquidação, últimos 90 dias"],
-    ["Prazo médio de recebimento (clientes)", dias(i.prazoClientes), "Emissão → vencimento"],
-    ["Prazo médio de pagamento", dias(i.prazoPagamento), "Emissão → vencimento"],
+    ["Prazo médio de recebimento (cartões)", dias(dadosIndicadores.prazoCartoes), "Venda → liquidação, últimos 90 dias"],
+    ["Prazo médio de recebimento (clientes)", dias(dadosIndicadores.prazoClientes), "Emissão → vencimento"],
+    ["Prazo médio de pagamento", dias(dadosIndicadores.prazoPagamento), "Emissão → vencimento"],
     [
       "Contas a receber vencidas",
-      formatMoeda(i.vencidoReceber),
+      formatMoeda(dadosIndicadores.vencidoReceber),
       "Em aberto até a referência",
-      i.vencidoReceber ? "text-warning" : "",
+      dadosIndicadores.vencidoReceber ? "text-warning" : "",
     ],
     [
       "Contas a pagar vencidas",
-      formatMoeda(i.vencidoPagar),
+      formatMoeda(dadosIndicadores.vencidoPagar),
       "Em aberto até a referência",
-      i.vencidoPagar ? "text-error" : "",
+      dadosIndicadores.vencidoPagar ? "text-error" : "",
     ],
-    ["Entradas previstas (30 dias)", formatMoeda(i.previstoEntradas), "Cartões e contas a receber"],
-    ["Saídas previstas (30 dias)", formatMoeda(i.previstoSaidas), "Contas a pagar"],
+    ["Entradas previstas (30 dias)", formatMoeda(dadosIndicadores.previstoEntradas), "Cartões e contas a receber"],
+    ["Saídas previstas (30 dias)", formatMoeda(dadosIndicadores.previstoSaidas), "Contas a pagar"],
   ];
   return (
     <Card className="min-w-0">

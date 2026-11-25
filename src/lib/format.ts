@@ -51,15 +51,15 @@ const semZeroNegativo = (value: number) => (Math.abs(value) < 0.005 ? 0 : value)
 /** +8,21% */
 export function formatVariacao(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  const v = semZeroNegativo(value);
-  return `${v > 0 ? "+" : ""}${decimal2.format(v)}%`;
+  const ajustado = semZeroNegativo(value);
+  return `${ajustado > 0 ? "+" : ""}${decimal2.format(ajustado)}%`;
 }
 
 /** -0,72 p.p. */
 export function formatPontos(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  const v = semZeroNegativo(value);
-  return `${v > 0 ? "+" : ""}${decimal2.format(v)} p.p.`;
+  const ajustado = semZeroNegativo(value);
+  return `${ajustado > 0 ? "+" : ""}${decimal2.format(ajustado)} p.p.`;
 }
 
 export function formatInteiro(value: number): string {
