@@ -12,16 +12,16 @@ function preencher(periodo: Periodo, series: (PontoSerie[] | undefined)[]): Dia[
     for (const ponto of serie ?? []) porDia.set(ponto.data, { ...porDia.get(ponto.data), ...ponto });
   }
   return eachDay(periodo).map((data) => {
-    const p = porDia.get(data);
+    const registro = porDia.get(data);
     return {
       data,
-      venda: p?.venda ?? null,
-      custo: p?.custo ?? null,
-      compra: p?.compra ?? null,
-      vendaPdv: p?.vendaPdv ?? null,
-      tickets: p?.tickets ?? null,
-      cancelamentos: p?.cancelamentos ?? null,
-      despesas: p?.despesas ?? null,
+      venda: registro?.venda ?? null,
+      custo: registro?.custo ?? null,
+      compra: registro?.compra ?? null,
+      vendaPdv: registro?.vendaPdv ?? null,
+      tickets: registro?.tickets ?? null,
+      cancelamentos: registro?.cancelamentos ?? null,
+      despesas: registro?.despesas ?? null,
     };
   });
 }
@@ -33,8 +33,8 @@ export function combinarSeries(
   series: (SerieResponse | undefined)[],
 ): ResumoResponse {
   return {
-    atual: { periodo, dias: preencher(periodo, series.map((s) => s?.atual)) },
-    anterior: { periodo: periodoAnterior, dias: preencher(periodoAnterior, series.map((s) => s?.anterior)) },
+    atual: { periodo, dias: preencher(periodo, series.map((serie) => serie?.atual)) },
+    anterior: { periodo: periodoAnterior, dias: preencher(periodoAnterior, series.map((serie) => serie?.anterior)) },
   };
 }
 
@@ -92,26 +92,26 @@ export type Indicadores = {
 };
 
 export function indicadores(dias: Dia[]): Indicadores {
-  const t = totais(dias);
-  const lucro = t.venda - t.custo;
-  const resultado = lucro - t.despesas;
+  const totalGeral = totais(dias);
+  const lucro = totalGeral.venda - totalGeral.custo;
+  const resultado = lucro - totalGeral.despesas;
   return {
-    venda: t.venda,
+    venda: totalGeral.venda,
     lucro,
-    margem: percentual(lucro, t.venda),
-    compra: t.compra,
-    compraSobreVenda: percentual(t.compra, t.venda),
-    vendaPdv: t.vendaPdv,
-    tickets: t.tickets,
-    ticketMedio: t.tickets ? t.vendaPdv / t.tickets : null,
-    cancelamentos: t.cancelamentos,
+    margem: percentual(lucro, totalGeral.venda),
+    compra: totalGeral.compra,
+    compraSobreVenda: percentual(totalGeral.compra, totalGeral.venda),
+    vendaPdv: totalGeral.vendaPdv,
+    tickets: totalGeral.tickets,
+    ticketMedio: totalGeral.tickets ? totalGeral.vendaPdv / totalGeral.tickets : null,
+    cancelamentos: totalGeral.cancelamentos,
     // Cancelamentos são do PDV: base = venda PDV.
-    cancelamentosSobreVenda: percentual(t.cancelamentos, t.vendaPdv),
-    despesas: t.despesas,
-    despesasSobreVenda: percentual(t.despesas, t.venda),
+    cancelamentosSobreVenda: percentual(totalGeral.cancelamentos, totalGeral.vendaPdv),
+    despesas: totalGeral.despesas,
+    despesasSobreVenda: percentual(totalGeral.despesas, totalGeral.venda),
     resultado,
-    resultadoSobreVenda: percentual(resultado, t.venda),
-    cobertura: t.cobertura,
+    resultadoSobreVenda: percentual(resultado, totalGeral.venda),
+    cobertura: totalGeral.cobertura,
   };
 }
 
@@ -129,13 +129,13 @@ export function serieDiaria(
 
 /** Medidas do gráfico de evolução: null quando nenhum dia do intervalo tem venda carregada. */
 export function vendaDoIntervalo(dias: Dia[]): number | null {
-  const t = totais(dias);
-  return t.cobertura.venda ? t.venda : null;
+  const totalGeral = totais(dias);
+  return totalGeral.cobertura.venda ? totalGeral.venda : null;
 }
 
 export function margemDoIntervalo(dias: Dia[]): number | null {
-  const t = totais(dias);
-  return t.cobertura.venda ? percentual(t.venda - t.custo, t.venda) : null;
+  const totalGeral = totais(dias);
+  return totalGeral.cobertura.venda ? percentual(totalGeral.venda - totalGeral.custo, totalGeral.venda) : null;
 }
 
 export type Situacao = "bom" | "atencao" | "critico";
@@ -190,13 +190,13 @@ export function alertas(
   const lista: Alerta[] = [];
 
   if (regras.departamentoCritico) {
-    for (const d of departamentos) {
-      if (d.situacao !== "critico" || d.variacaoPp == null) continue;
+    for (const linhaCalculada of departamentos) {
+      if (linhaCalculada.situacao !== "critico" || linhaCalculada.variacaoPp == null) continue;
       lista.push({
-        id: `departamento-${d.codigo}`,
-        tipo: d.variacaoPp > 0 ? "compra-alta" : "compra-baixa",
-        titulo: `${d.descricao}: compra sobre venda ${d.variacaoPp > 0 ? "subiu" : "caiu"} ${formatDecimal(Math.abs(d.variacaoPp))} p.p.`,
-        detalhe: `${formatDecimal(d.compraSobreVenda ?? 0)}% vs ${formatDecimal(d.compraSobreVendaAnterior ?? 0)}% no período anterior`,
+        id: `departamento-${linhaCalculada.codigo}`,
+        tipo: linhaCalculada.variacaoPp > 0 ? "compra-alta" : "compra-baixa",
+        titulo: `${linhaCalculada.descricao}: compra sobre venda ${linhaCalculada.variacaoPp > 0 ? "subiu" : "caiu"} ${formatDecimal(Math.abs(linhaCalculada.variacaoPp))} p.p.`,
+        detalhe: `${formatDecimal(linhaCalculada.compraSobreVenda ?? 0)}% vs ${formatDecimal(linhaCalculada.compraSobreVendaAnterior ?? 0)}% no período anterior`,
       });
     }
   }

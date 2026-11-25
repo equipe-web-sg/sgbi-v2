@@ -25,42 +25,42 @@ const COLUNAS: Coluna<Compromisso>[] = [
     titulo: "Vencimento",
     align: "left",
     className: "tabular-nums",
-    cell: (c) => formatData(c.data),
-    ordenar: (c) => c.data,
+    cell: (compromisso) => formatData(compromisso.data),
+    ordenar: (compromisso) => compromisso.data,
   },
   {
     id: "descricao",
     titulo: "Descrição",
     align: "left",
     className: "w-full max-w-0 truncate",
-    cell: (c) => <span title={c.descricao}>{c.descricao}</span>,
-    ordenar: (c) => c.descricao,
+    cell: (compromisso) => <span title={compromisso.descricao}>{compromisso.descricao}</span>,
+    ordenar: (compromisso) => compromisso.descricao,
   },
   {
     id: "tipo",
     titulo: "Tipo",
     align: "left",
-    cell: (c) => (
-      <span className={c.tipo === "entrada" ? "text-success" : "text-error"}>
-        {c.tipo === "entrada" ? "Recebimento" : "Pagamento"}
+    cell: (compromisso) => (
+      <span className={compromisso.tipo === "entrada" ? "text-success" : "text-error"}>
+        {compromisso.tipo === "entrada" ? "Recebimento" : "Pagamento"}
       </span>
     ),
-    ordenar: (c) => c.tipo,
+    ordenar: (compromisso) => compromisso.tipo,
   },
-  { id: "valor", titulo: "Valor", cell: (c) => formatMoeda(c.valor), ordenar: (c) => c.valor },
+  { id: "valor", titulo: "Valor", cell: (compromisso) => formatMoeda(compromisso.valor), ordenar: (compromisso) => compromisso.valor },
   {
     id: "status",
     titulo: "Status",
     align: "left",
-    cell: (c) => (
+    cell: (compromisso) => (
       <span
-        className={`inline-flex items-center gap-1.5 font-medium ${c.situacao === "vencido" ? "text-error" : "text-warning"}`}
+        className={`inline-flex items-center gap-1.5 font-medium ${compromisso.situacao === "vencido" ? "text-error" : "text-warning"}`}
       >
-        <span className={`size-2 rounded-full ${c.situacao === "vencido" ? "bg-error" : "bg-warning"}`} aria-hidden />
-        {c.situacao === "vencido" ? "Vencido" : "A vencer"}
+        <span className={`size-2 rounded-full ${compromisso.situacao === "vencido" ? "bg-error" : "bg-warning"}`} aria-hidden />
+        {compromisso.situacao === "vencido" ? "Vencido" : "A vencer"}
       </span>
     ),
-    ordenar: (c) => c.situacao,
+    ordenar: (compromisso) => compromisso.situacao,
   },
 ];
 
@@ -69,7 +69,7 @@ function Tabela({ compromissos }: { compromissos: Compromisso[] }) {
     <DataTable
       colunas={COLUNAS}
       linhas={compromissos}
-      chave={(c) => `${c.data}-${c.tipo}-${c.situacao}-${c.descricao}-${c.valor}`}
+      chave={(compromisso) => `${compromisso.data}-${compromisso.tipo}-${compromisso.situacao}-${compromisso.descricao}-${compromisso.valor}`}
       densidade="compacto"
     />
   );
@@ -78,10 +78,10 @@ function Tabela({ compromissos }: { compromissos: Compromisso[] }) {
 /** Títulos a vencer nos próximos dias e vencidos em aberto (cartões agrupados por dia e empresa). */
 export function CompromissosCard({ compromissos, carregando }: { compromissos: Compromisso[]; carregando: boolean }) {
   const [filtro, setFiltro] = useState<Filtro>("todos");
-  const lista = compromissos.filter((c) => filtro === "todos" || c.tipo === filtro);
+  const lista = compromissos.filter((compromisso) => filtro === "todos" || compromisso.tipo === filtro);
   // No card: primeiro os vencidos, depois os próximos vencimentos.
-  const destaque = [...lista.filter((c) => c.situacao === "vencido"), ...lista.filter((c) => c.situacao !== "vencido")];
-  const n = FINANCEIRO_CONFIG.compromissosNoCard;
+  const destaque = [...lista.filter((compromisso) => compromisso.situacao === "vencido"), ...lista.filter((compromisso) => compromisso.situacao !== "vencido")];
+  const limite = FINANCEIRO_CONFIG.compromissosNoCard;
   const seletor = <Segmented label="Tipo de compromisso" value={filtro} options={FILTROS} onChange={setFiltro} />;
 
   return (
@@ -92,7 +92,7 @@ export function CompromissosCard({ compromissos, carregando }: { compromissos: C
           {seletor}
           <Dialog>
             <DialogTrigger
-              disabled={lista.length <= n}
+              disabled={lista.length <= limite}
               className="flex shrink-0 items-center gap-1 rounded px-1 text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring disabled:invisible"
             >
               Ver todos
@@ -119,7 +119,7 @@ export function CompromissosCard({ compromissos, carregando }: { compromissos: C
       <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2" aria-busy={carregando}>
         <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
           {destaque.length ? (
-            <Tabela compromissos={destaque.slice(0, Math.max(n, 30))} />
+            <Tabela compromissos={destaque.slice(0, Math.max(limite, 30))} />
           ) : (
             <p className="py-8 text-center text-xs text-muted-foreground">Nenhum compromisso.</p>
           )}

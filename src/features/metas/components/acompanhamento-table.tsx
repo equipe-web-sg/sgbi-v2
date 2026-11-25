@@ -36,24 +36,24 @@ export type LinhaAcompanhamento = {
 };
 
 /** Linha da tabela a partir da meta e do realizado do nível. */
-export function calcularLinha(l: LinhaMetaNivel, aba: PeriodoMeta): LinhaAcompanhamento {
+export function calcularLinha(linhaMetaNivel: LinhaMetaNivel, aba: PeriodoMeta): LinhaAcompanhamento {
   return {
-    codigo: l.codigo,
-    descricao: l.descricao,
-    pai: l.pai,
+    codigo: linhaMetaNivel.codigo,
+    descricao: linhaMetaNivel.descricao,
+    pai: linhaMetaNivel.pai,
     resumo: resumirMeta({
-      meta: l.meta != null ? { meta: l.meta, metaLucro: l.metaLucro ?? 0 } : null,
-      metaEsperada: l.metaEsperada,
-      venda: l.venda,
-      custo: l.custo,
+      meta: linhaMetaNivel.meta != null ? { meta: linhaMetaNivel.meta, metaLucro: linhaMetaNivel.metaLucro ?? 0 } : null,
+      metaEsperada: linhaMetaNivel.metaEsperada,
+      venda: linhaMetaNivel.venda,
+      custo: linhaMetaNivel.custo,
       periodo: aba.periodo,
       decorrido: aba.decorrido,
     }),
-    variacaoVenda: aba.decorrido ? variacao(l.venda, l.vendaAnterior) : null,
+    variacaoVenda: aba.decorrido ? variacao(linhaMetaNivel.venda, linhaMetaNivel.vendaAnterior) : null,
   };
 }
 
-const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) => q.isPending || q.isPlaceholderData;
+const carregando = (consulta: { isPending: boolean; isPlaceholderData: boolean }) => consulta.isPending || consulta.isPlaceholderData;
 const SEM_VALOR = <span className="text-muted-foreground">—</span>;
 
 /** Moeda colorida pelo sinal (diferença para a meta). */
@@ -62,73 +62,73 @@ function Sinal({ value, children }: { value: number | null; children: React.Reac
   return <span className={value >= 0 ? "text-success" : "text-error"}>{children}</span>;
 }
 
-const pctDiferenca = (r: ResumoMeta) => (r.meta && r.diferenca != null ? (r.diferenca / r.meta) * 100 : null);
+const pctDiferenca = (resumoMeta: ResumoMeta) => (resumoMeta.meta && resumoMeta.diferenca != null ? (resumoMeta.diferenca / resumoMeta.meta) * 100 : null);
 
 function colunasAcompanhamento(rotuloNivel: string, metaDoPeriodo: string): Coluna<LinhaAcompanhamento>[] {
   return [
-    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", cell: (l) => l.descricao, ordenar: (l) => l.descricao },
+    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", cell: (linhaAcompanhamento) => linhaAcompanhamento.descricao, ordenar: (linhaAcompanhamento) => linhaAcompanhamento.descricao },
     {
       id: "meta",
       titulo: `Meta ${metaDoPeriodo}`,
       subtitulo: "Valor",
       divisor: true,
-      cell: (l) => (l.resumo.meta != null ? formatMoeda(l.resumo.meta) : SEM_VALOR),
-      ordenar: (l) => l.resumo.meta,
+      cell: (linhaAcompanhamento) => (linhaAcompanhamento.resumo.meta != null ? formatMoeda(linhaAcompanhamento.resumo.meta) : SEM_VALOR),
+      ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.meta,
     },
-    { id: "realizado", titulo: "Realizado", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.resumo.realizado), ordenar: (l) => l.resumo.realizado },
+    { id: "realizado", titulo: "Realizado", subtitulo: "Valor", divisor: true, cell: (linhaAcompanhamento) => formatMoeda(linhaAcompanhamento.resumo.realizado), ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.realizado },
     {
       id: "var-realizado",
       titulo: "Realizado",
       subtitulo: "Var. %",
-      cell: (l) => <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />,
-      ordenar: (l) => l.variacaoVenda,
+      cell: (linhaAcompanhamento) => <Delta value={linhaAcompanhamento.variacaoVenda} unidade="%" maiorMelhor />,
+      ordenar: (linhaAcompanhamento) => linhaAcompanhamento.variacaoVenda,
     },
     {
       id: "atingimento",
       titulo: "Atingimento",
       subtitulo: "%",
       divisor: true,
-      cell: (l) => <span className="font-semibold">{formatPercentual(l.resumo.atingimento)}</span>,
-      ordenar: (l) => l.resumo.atingimento,
+      cell: (linhaAcompanhamento) => <span className="font-semibold">{formatPercentual(linhaAcompanhamento.resumo.atingimento)}</span>,
+      ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.atingimento,
     },
     {
       id: "status",
       titulo: "Atingimento",
       subtitulo: "Situação",
       align: "left",
-      cell: (l) => <StatusMetaBadge status={l.resumo.status} />,
-      ordenar: (l) => ORDEM_STATUS[l.resumo.status],
+      cell: (linhaAcompanhamento) => <StatusMetaBadge status={linhaAcompanhamento.resumo.status} />,
+      ordenar: (linhaAcompanhamento) => ORDEM_STATUS[linhaAcompanhamento.resumo.status],
     },
     {
       id: "diferenca",
       titulo: "Diferença",
       subtitulo: "Valor",
       divisor: true,
-      cell: (l) => <Sinal value={l.resumo.diferenca}>{formatMoeda(l.resumo.diferenca)}</Sinal>,
-      ordenar: (l) => l.resumo.diferenca,
+      cell: (linhaAcompanhamento) => <Sinal value={linhaAcompanhamento.resumo.diferenca}>{formatMoeda(linhaAcompanhamento.resumo.diferenca)}</Sinal>,
+      ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.diferenca,
     },
     {
       id: "diferenca-pct",
       titulo: "Diferença",
       subtitulo: "%",
-      cell: (l) => <Sinal value={l.resumo.diferenca}>{formatPercentual(pctDiferenca(l.resumo))}</Sinal>,
-      ordenar: (l) => pctDiferenca(l.resumo),
+      cell: (linhaAcompanhamento) => <Sinal value={linhaAcompanhamento.resumo.diferenca}>{formatPercentual(pctDiferenca(linhaAcompanhamento.resumo))}</Sinal>,
+      ordenar: (linhaAcompanhamento) => pctDiferenca(linhaAcompanhamento.resumo),
     },
-    { id: "projecao", titulo: "Projeção de Fechamento", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.resumo.projecao), ordenar: (l) => l.resumo.projecao },
+    { id: "projecao", titulo: "Projeção de Fechamento", subtitulo: "Valor", divisor: true, cell: (linhaAcompanhamento) => formatMoeda(linhaAcompanhamento.resumo.projecao), ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.projecao },
     {
       id: "projecao-meta",
       titulo: "Projeção de Fechamento",
       subtitulo: "% meta",
-      cell: (l) =>
-        l.resumo.projecaoSobreMeta == null ? (
+      cell: (linhaAcompanhamento) =>
+        linhaAcompanhamento.resumo.projecaoSobreMeta == null ? (
           SEM_VALOR
         ) : (
-          <Sinal value={l.resumo.projecaoSobreMeta - 100}>{formatPercentual(l.resumo.projecaoSobreMeta)}</Sinal>
+          <Sinal value={linhaAcompanhamento.resumo.projecaoSobreMeta - 100}>{formatPercentual(linhaAcompanhamento.resumo.projecaoSobreMeta)}</Sinal>
         ),
-      ordenar: (l) => l.resumo.projecaoSobreMeta,
+      ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.projecaoSobreMeta,
     },
-    { id: "meta-margem", titulo: "Meta de Margem", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.resumo.metaMargem), ordenar: (l) => l.resumo.metaMargem },
-    { id: "margem", titulo: "Margem Atual", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.resumo.margem), ordenar: (l) => l.resumo.margem },
+    { id: "meta-margem", titulo: "Meta de Margem", subtitulo: "%", divisor: true, cell: (linhaAcompanhamento) => formatPercentual(linhaAcompanhamento.resumo.metaMargem), ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.metaMargem },
+    { id: "margem", titulo: "Margem Atual", subtitulo: "%", divisor: true, cell: (linhaAcompanhamento) => formatPercentual(linhaAcompanhamento.resumo.margem), ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.margem },
     {
       id: "status-margem",
       titulo: "Situação Margem",
@@ -136,8 +136,8 @@ function colunasAcompanhamento(rotuloNivel: string, metaDoPeriodo: string): Colu
       rotulo: "Situação da margem",
       align: "left",
       divisor: true,
-      cell: (l) => <StatusMargemBadge status={l.resumo.statusMargem} />,
-      ordenar: (l) => ORDEM_MARGEM[l.resumo.statusMargem],
+      cell: (linhaAcompanhamento) => <StatusMargemBadge status={linhaAcompanhamento.resumo.statusMargem} />,
+      ordenar: (linhaAcompanhamento) => ORDEM_MARGEM[linhaAcompanhamento.resumo.statusMargem],
     },
   ];
 }
@@ -163,19 +163,19 @@ export function AcompanhamentoTable({
 
   // Níveis a partir da aba escolhida; os de baixo só carregam ao expandir uma linha.
   const niveis = ORDEM.slice(ORDEM.indexOf(nivel));
-  const abertosNoNivel = (n: Nivel) => [...abertos].some((chave) => chave.startsWith(`${n}:`));
-  const habilitado = (i: number) => i === 0 || (!!niveis[i] && abertosNoNivel(niveis[i - 1]));
-  const opcoes = (i: number) => {
-    const q = metasQueries.niveis(filtros, niveis[i] ?? nivel, aba);
-    return { ...q, enabled: q.enabled !== false && habilitado(i) };
+  const abertosNoNivel = (nivelAlvo: Nivel) => [...abertos].some((chave) => chave.startsWith(`${nivelAlvo}:`));
+  const habilitado = (indice: number) => indice === 0 || (!!niveis[indice] && abertosNoNivel(niveis[indice - 1]));
+  const opcoes = (indice: number) => {
+    const consulta = metasQueries.niveis(filtros, niveis[indice] ?? nivel, aba);
+    return { ...consulta, enabled: consulta.enabled !== false && habilitado(indice) };
   };
   // Número fixo de hooks: uma consulta por nível possível.
   const consultas = [useQuery(opcoes(0)), useQuery(opcoes(1)), useQuery(opcoes(2))];
   const base = consultas[0];
 
-  const linhasPorNivel = niveis.map((_, i) => (consultas[i].data?.linhas ?? []).map((l) => calcularLinha(l, aba)));
+  const linhasPorNivel = niveis.map((_, indice) => (consultas[indice].data?.linhas ?? []).map((linhaMetaNivel) => calcularLinha(linhaMetaNivel, aba)));
   const termo = buscaAdiada.trim().toLocaleLowerCase("pt-BR");
-  const raiz = linhasPorNivel[0].filter((l) => !termo || l.descricao.toLocaleLowerCase("pt-BR").includes(termo));
+  const raiz = linhasPorNivel[0].filter((linhaAcompanhamento) => !termo || linhaAcompanhamento.descricao.toLocaleLowerCase("pt-BR").includes(termo));
 
   const alternar = (chave: string) =>
     setAbertos((atual) => {
@@ -185,29 +185,29 @@ export function AcompanhamentoTable({
       return proximo;
     });
 
-  const rotuloNivel = NIVEIS.find((n) => n.value === nivel)!.label;
+  const rotuloNivel = NIVEIS.find((opcao) => opcao.value === nivel)!.label;
 
   const exportar = () => {
     const csv: (string | number | null)[][] = [];
     const adicionar = (profundidade: number, lista: LinhaAcompanhamento[]) => {
-      for (const l of lista) {
-        const r = l.resumo;
+      for (const linhaAcompanhamento of lista) {
+        const resumoMeta = linhaAcompanhamento.resumo;
         csv.push([
-          NIVEIS.find((n) => n.value === niveis[profundidade])!.label,
-          l.descricao,
-          r.meta,
-          r.realizado,
-          l.variacaoVenda,
-          r.atingimento,
-          ROTULO_STATUS[r.status],
-          r.diferenca,
-          r.projecao,
-          r.projecaoSobreMeta,
-          r.metaMargem,
-          r.margem,
+          NIVEIS.find((opcao) => opcao.value === niveis[profundidade])!.label,
+          linhaAcompanhamento.descricao,
+          resumoMeta.meta,
+          resumoMeta.realizado,
+          linhaAcompanhamento.variacaoVenda,
+          resumoMeta.atingimento,
+          ROTULO_STATUS[resumoMeta.status],
+          resumoMeta.diferenca,
+          resumoMeta.projecao,
+          resumoMeta.projecaoSobreMeta,
+          resumoMeta.metaMargem,
+          resumoMeta.margem,
         ]);
-        if (abertos.has(`${niveis[profundidade]}:${l.codigo}`) && linhasPorNivel[profundidade + 1]) {
-          adicionar(profundidade + 1, linhasPorNivel[profundidade + 1].filter((f) => f.pai === l.codigo));
+        if (abertos.has(`${niveis[profundidade]}:${linhaAcompanhamento.codigo}`) && linhasPorNivel[profundidade + 1]) {
+          adicionar(profundidade + 1, linhasPorNivel[profundidade + 1].filter((filha) => filha.pai === linhaAcompanhamento.codigo));
         }
       }
     };
@@ -233,8 +233,8 @@ export function AcompanhamentoTable({
             label="Nível"
             value={nivel}
             options={NIVEIS}
-            onChange={(n) => {
-              setNivel(n);
+            onChange={(novoNivel) => {
+              setNivel(novoNivel);
               setAbertos(new Set());
             }}
           />
@@ -248,7 +248,7 @@ export function AcompanhamentoTable({
             <input
               type="search"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              onChange={(evento) => setBusca(evento.target.value)}
               placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
               className="h-9 w-48 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
             />
@@ -275,19 +275,19 @@ export function AcompanhamentoTable({
             <DataTable
               colunas={colunasAcompanhamento(rotuloNivel, DO_PERIODO[aba.id])}
               linhas={raiz}
-              chave={(l, p) => `${niveis[p]}:${l.codigo}`}
+              chave={(linhaAcompanhamento, profundidade) => `${niveis[profundidade]}:${linhaAcompanhamento.codigo}`}
               total={total}
               rotuloTotal="Total"
               arvore={{
                 abertas: abertos,
                 alternar,
-                expansivel: (p) => p < niveis.length - 1,
-                filhos: (l, p) => ({
-                  linhas: linhasPorNivel[p + 1].filter((f) => f.pai === l.codigo),
-                  carregando: carregando(consultas[p + 1]),
+                expansivel: (profundidade) => profundidade < niveis.length - 1,
+                filhos: (linhaAcompanhamento, profundidade) => ({
+                  linhas: linhasPorNivel[profundidade + 1].filter((filha) => filha.pai === linhaAcompanhamento.codigo),
+                  carregando: carregando(consultas[profundidade + 1]),
                 }),
                 rotuloVazio: "Sem meta nem venda no nível de baixo.",
-                descricao: (l) => l.descricao,
+                descricao: (linhaAcompanhamento) => linhaAcompanhamento.descricao,
               }}
             />
           </div>

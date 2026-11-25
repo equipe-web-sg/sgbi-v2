@@ -57,8 +57,8 @@ function colunasPeriodos(onSelecionar: (aba: AbaPeriodo) => void): Coluna<LinhaP
         <button
           type="button"
           className="text-left font-medium focus-visible:outline-2 focus-visible:outline-ring"
-          onClick={(e) => {
-            e.stopPropagation();
+          onClick={(evento) => {
+            evento.stopPropagation();
             onSelecionar(periodo.id);
           }}
         >
@@ -108,9 +108,9 @@ export function MetasPorPeriodo({
       <DataTable
         colunas={colunasPeriodos(onSelecionar)}
         linhas={linhas}
-        chave={(l) => l.periodo.id}
-        aoClicar={(l) => onSelecionar(l.periodo.id)}
-        classeLinha={(l) => (l.periodo.id === ativa ? "bg-primary/10" : "")}
+        chave={(linhaPeriodo) => linhaPeriodo.periodo.id}
+        aoClicar={(linhaPeriodo) => onSelecionar(linhaPeriodo.periodo.id)}
+        classeLinha={(linhaPeriodo) => (linhaPeriodo.periodo.id === ativa ? "bg-primary/10" : "")}
         cabecalhoFixo={false}
         densidade="mini"
       />
@@ -124,32 +124,32 @@ const COLUNAS_RANKING: Coluna<LinhaAcompanhamento>[] = [
     titulo: "Departamento",
     align: "left",
     className: "w-full max-w-0 truncate",
-    cell: (l) => <span title={l.descricao}>{l.descricao}</span>,
-    ordenar: (l) => l.descricao,
+    cell: (linhaAcompanhamento) => <span title={linhaAcompanhamento.descricao}>{linhaAcompanhamento.descricao}</span>,
+    ordenar: (linhaAcompanhamento) => linhaAcompanhamento.descricao,
   },
   {
     id: "atingimento",
     titulo: "Ating.",
-    cell: (l) => <span className="font-semibold">{formatPercentual(l.resumo.atingimento)}</span>,
-    ordenar: (l) => l.resumo.atingimento,
+    cell: (linhaAcompanhamento) => <span className="font-semibold">{formatPercentual(linhaAcompanhamento.resumo.atingimento)}</span>,
+    ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.atingimento,
   },
   {
     id: "diferenca",
     titulo: "Diferença",
-    cell: (l) => (
-      <span className={(l.resumo.diferenca ?? 0) >= 0 ? "text-success" : "text-error"}>{formatMoeda(l.resumo.diferenca)}</span>
+    cell: (linhaAcompanhamento) => (
+      <span className={(linhaAcompanhamento.resumo.diferenca ?? 0) >= 0 ? "text-success" : "text-error"}>{formatMoeda(linhaAcompanhamento.resumo.diferenca)}</span>
     ),
-    ordenar: (l) => l.resumo.diferenca,
+    ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.diferenca,
   },
-  { id: "projecao", titulo: "Projeção", cell: (l) => formatMoeda(l.resumo.projecao), ordenar: (l) => l.resumo.projecao },
+  { id: "projecao", titulo: "Projeção", cell: (linhaAcompanhamento) => formatMoeda(linhaAcompanhamento.resumo.projecao), ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.projecao },
 ];
 
 function TabelaRanking({ linhas }: { linhas: LinhaAcompanhamento[] }) {
-  return <DataTable colunas={COLUNAS_RANKING} linhas={linhas} chave={(l) => String(l.codigo)} densidade="mini" vazio={null} />;
+  return <DataTable colunas={COLUNAS_RANKING} linhas={linhas} chave={(linhaAcompanhamento) => String(linhaAcompanhamento.codigo)} densidade="mini" vazio={null} />;
 }
 
 /** Realizado ÷ meta esperada até a referência (critério de risco e de melhor desempenho). */
-export const ritmo = (r: ResumoMeta) => (r.metaEsperada ? r.realizado / r.metaEsperada : null);
+export const ritmo = (resumoMeta: ResumoMeta) => (resumoMeta.metaEsperada ? resumoMeta.realizado / resumoMeta.metaEsperada : null);
 
 /** Departamentos em risco ou com melhor desempenho, pelo ritmo (P37). */
 export function RankingDepartamentos({
@@ -163,7 +163,7 @@ export function RankingDepartamentos({
   linhas: LinhaAcompanhamento[];
   carregando: boolean;
 }) {
-  const n = METAS_CONFIG.linhasNoCard;
+  const limite = METAS_CONFIG.linhasNoCard;
   return (
     <CardLista
       titulo={titulo}
@@ -171,7 +171,7 @@ export function RankingDepartamentos({
       acao={
         <Dialog>
           <DialogTrigger
-            disabled={linhas.length <= n}
+            disabled={linhas.length <= limite}
             className="flex shrink-0 items-center gap-1 rounded px-1 text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring disabled:invisible"
           >
             Ver todos
@@ -187,7 +187,7 @@ export function RankingDepartamentos({
         </Dialog>
       }
     >
-      {linhas.length ? <TabelaRanking linhas={linhas.slice(0, n)} /> : <Vazio>Nenhum departamento.</Vazio>}
+      {linhas.length ? <TabelaRanking linhas={linhas.slice(0, limite)} /> : <Vazio>Nenhum departamento.</Vazio>}
     </CardLista>
   );
 }
@@ -198,37 +198,37 @@ const COLUNAS_MARGEM: Coluna<LinhaAcompanhamento>[] = [
     titulo: "Departamento",
     align: "left",
     className: "w-full max-w-0 truncate",
-    cell: (l) => <span title={l.descricao}>{l.descricao}</span>,
-    ordenar: (l) => l.descricao,
+    cell: (linhaAcompanhamento) => <span title={linhaAcompanhamento.descricao}>{linhaAcompanhamento.descricao}</span>,
+    ordenar: (linhaAcompanhamento) => linhaAcompanhamento.descricao,
   },
-  { id: "meta", titulo: "Meta", cell: (l) => formatPercentual(l.resumo.metaMargem), ordenar: (l) => l.resumo.metaMargem },
-  { id: "atual", titulo: "Atual", cell: (l) => formatPercentual(l.resumo.margem), ordenar: (l) => l.resumo.margem },
+  { id: "meta", titulo: "Meta", cell: (linhaAcompanhamento) => formatPercentual(linhaAcompanhamento.resumo.metaMargem), ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.metaMargem },
+  { id: "atual", titulo: "Atual", cell: (linhaAcompanhamento) => formatPercentual(linhaAcompanhamento.resumo.margem), ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.margem },
   {
     id: "diferenca",
     titulo: "Dif.",
-    cell: (l) => (
+    cell: (linhaAcompanhamento) => (
       <span
         className={`font-semibold ${
-          l.resumo.statusMargem === "ok" ? "text-success" : l.resumo.statusMargem === "atencao" ? "text-warning" : "text-error"
+          linhaAcompanhamento.resumo.statusMargem === "ok" ? "text-success" : linhaAcompanhamento.resumo.statusMargem === "atencao" ? "text-warning" : "text-error"
         }`}
       >
-        {formatPontos(l.resumo.diferencaMargem).replace(" p.p.", "")}
+        {formatPontos(linhaAcompanhamento.resumo.diferencaMargem).replace(" p.p.", "")}
       </span>
     ),
-    ordenar: (l) => l.resumo.diferencaMargem,
+    ordenar: (linhaAcompanhamento) => linhaAcompanhamento.resumo.diferencaMargem,
   },
 ];
 
 /** Meta de margem × margem atual por departamento, pior diferença primeiro. */
 export function SituacaoMargem({ linhas, carregando }: { linhas: LinhaAcompanhamento[]; carregando: boolean }) {
   const comMeta = linhas
-    .filter((l) => l.resumo.metaMargem != null && l.resumo.margem != null)
-    .sort((a, b) => a.resumo.diferencaMargem! - b.resumo.diferencaMargem!);
+    .filter((linhaAcompanhamento) => linhaAcompanhamento.resumo.metaMargem != null && linhaAcompanhamento.resumo.margem != null)
+    .sort((primeiro, segundo) => primeiro.resumo.diferencaMargem! - segundo.resumo.diferencaMargem!);
   return (
     <CardLista titulo="Situação da Margem Bruta" carregando={carregando}>
       {comMeta.length ? (
         <div className="max-h-[8.6rem] overflow-y-auto">
-          <DataTable colunas={COLUNAS_MARGEM} linhas={comMeta} chave={(l) => String(l.codigo)} densidade="mini" />
+          <DataTable colunas={COLUNAS_MARGEM} linhas={comMeta} chave={(linhaAcompanhamento) => String(linhaAcompanhamento.codigo)} densidade="mini" />
         </div>
       ) : (
         <Vazio>Sem meta de margem por departamento.</Vazio>

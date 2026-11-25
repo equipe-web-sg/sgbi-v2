@@ -15,7 +15,7 @@ import type {
 const BASE = "/api/metas";
 const get = <T,>(path: string, params: Record<string, string>) => getJson<T>(`${BASE}${path}`, params);
 
-const filiaisParam = (filtros: FiltrosMetas) => [...filtros.filiais].sort((a, b) => a - b).join(",");
+const filiaisParam = (filtros: FiltrosMetas) => [...filtros.filiais].sort((primeiro, segundo) => primeiro - segundo).join(",");
 
 /** Filiais e departamento (sem origem: as metas não dependem dela). */
 function base(filtros: FiltrosMetas): Record<string, string> {
@@ -25,8 +25,8 @@ function base(filtros: FiltrosMetas): Record<string, string> {
   };
 }
 
-const periodo = (p: Periodo | null, prefixo = ""): Record<string, string> =>
-  !p ? {} : prefixo ? { [`${prefixo}Inicio`]: p.inicio, [`${prefixo}Fim`]: p.fim } : { inicio: p.inicio, fim: p.fim };
+const periodo = (intervalo: Periodo | null, prefixo = ""): Record<string, string> =>
+  !intervalo ? {} : prefixo ? { [`${prefixo}Inicio`]: intervalo.inicio, [`${prefixo}Fim`]: intervalo.fim } : { inicio: intervalo.inicio, fim: intervalo.fim };
 
 const comum = (filtros: FiltrosMetas) => ({
   staleTime: STALE_TIME,
@@ -38,7 +38,7 @@ export const metasQueries = {
   filiais: filiaisQuery,
 
   opcoes: (filiais: number[]) => {
-    const params = { filiais: [...filiais].sort((a, b) => a - b).join(",") };
+    const params = { filiais: [...filiais].sort((primeiro, segundo) => primeiro - segundo).join(",") };
     return queryOptions({
       queryKey: ["metas", "opcoes", params],
       queryFn: () => get<OpcoesMetasResponse>("/opcoes", params),

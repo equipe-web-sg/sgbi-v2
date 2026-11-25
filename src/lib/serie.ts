@@ -40,13 +40,13 @@ export function evolucaoComparativa<T extends { data: string }>(
   granularidade: Granularidade,
   medida: (dias: T[]) => number | null,
 ): PontoComparativo[] {
-  const a = agrupar(atual, granularidade, medida);
-  const b = agrupar(anterior, granularidade, medida);
-  return Array.from({ length: Math.max(a.length, b.length) }, (_, i) => ({
-    chave: a[i]?.inicio ?? b[i].inicio,
-    dataAtual: a[i]?.inicio ?? null,
-    dataAnterior: b[i]?.inicio ?? null,
-    atual: a[i]?.valor ?? null,
-    anterior: b[i]?.valor ?? null,
+  const grupoAtual = agrupar(atual, granularidade, medida);
+  const grupoAnterior = agrupar(anterior, granularidade, medida);
+  return Array.from({ length: Math.max(grupoAtual.length, grupoAnterior.length) }, (_, indice) => ({
+    chave: grupoAtual[indice]?.inicio ?? grupoAnterior[indice].inicio,
+    dataAtual: grupoAtual[indice]?.inicio ?? null,
+    dataAnterior: grupoAnterior[indice]?.inicio ?? null,
+    atual: grupoAtual[indice]?.valor ?? null,
+    anterior: grupoAnterior[indice]?.valor ?? null,
   }));
 }

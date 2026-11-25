@@ -1,0 +1,11 @@
+# Saída do PyInstaller e cache do Python
+build/
+dist/
+__pycache__/
+*.pyc
+
+# Credenciais (Docker Hub e FTP da SG) embutidas no executável (ver README): nunca vão para o git.
+# Copie resources/credentials-example.json para resources/credentials.json e preencha.
+resources/credentials.json
+# Biblioteca do headquarter (plano B quando o FTP falha), binária
+resources/libmysqlclient*

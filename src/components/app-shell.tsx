@@ -93,8 +93,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!expanded && !mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+    const onKey = (evento: KeyboardEvent) => {
+      if (evento.key !== "Escape") return;
       setExpanded(false);
       setMobileOpen(false);
     };
@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mb-2 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setExpanded((e) => !e)}
+            onClick={() => setExpanded((aberto) => !aberto)}
             aria-label={expanded ? "Recolher menu" : "Expandir menu"}
             aria-expanded={expanded}
             title={expanded ? "Recolher menu" : "Expandir menu"}

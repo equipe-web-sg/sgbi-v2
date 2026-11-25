@@ -40,27 +40,27 @@ type FiltrosEstado = Omit<FiltrosMetas, "filiais" | "mes"> & {
   mes: string | null;
 };
 
-const carregando = (q: { isPending: boolean; isPlaceholderData: boolean; fetchStatus: string }) =>
-  (q.isPending && q.fetchStatus !== "idle") || q.isPlaceholderData;
+const carregando = (consulta: { isPending: boolean; isPlaceholderData: boolean; fetchStatus: string }) =>
+  (consulta.isPending && consulta.fetchStatus !== "idle") || consulta.isPlaceholderData;
 
 /** Resumo de uma aba a partir das metas diárias e do realizado (ou do total, na aba Ano). */
 function resumoDaAba(
-  p: PeriodoMeta,
+  periodoMeta: PeriodoMeta,
   metas: MetaDia[],
   realizados: RealizadoDia[],
   totalAno: { venda: number; custo: number } | undefined,
 ): ResumoMeta {
-  const meta = somaMetaDiaria(metas, p.periodo);
-  const esperada = somaMetaDiaria(metas, p.decorrido);
-  const real = p.id === "ano" ? (p.decorrido ? totalAno : null) : somaRealizado(realizados, p.decorrido);
+  const meta = somaMetaDiaria(metas, periodoMeta.periodo);
+  const esperada = somaMetaDiaria(metas, periodoMeta.decorrido);
+  const real = periodoMeta.id === "ano" ? (periodoMeta.decorrido ? totalAno : null) : somaRealizado(realizados, periodoMeta.decorrido);
   return resumirMeta({
     meta,
     // Período não começado: nada esperado ainda; sem meta: null.
     metaEsperada: meta ? (esperada?.meta ?? 0) : null,
     venda: real?.venda ?? 0,
     custo: real?.custo ?? 0,
-    periodo: p.periodo,
-    decorrido: p.decorrido,
+    periodo: periodoMeta.periodo,
+    decorrido: periodoMeta.decorrido,
   });
 }
 
@@ -79,7 +79,7 @@ export function Metas() {
   const filtros: FiltrosMetas = {
     ...estado,
     mes: estado.mes ?? dataMaxima?.slice(0, 7) ?? "",
-    filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((f) => f.codigo) ?? [],
+    filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((filial) => filial.codigo) ?? [],
   };
   const opcoes = useQuery(metasQueries.opcoes(filtros.filiais));
 
@@ -88,8 +88,8 @@ export function Metas() {
     () => (filtros.mes && referencia ? periodosDaReferencia(filtros.mes, referencia) : []),
     [filtros.mes, referencia],
   );
-  const ativa = periodos.find((p) => p.id === aba);
-  const porId = (id: AbaPeriodo) => periodos.find((p) => p.id === id);
+  const ativa = periodos.find((periodoMeta) => periodoMeta.id === aba);
+  const porId = (id: AbaPeriodo) => periodos.find((periodoMeta) => periodoMeta.id === id);
   const ano = porId("ano");
   const mes = porId("mes");
   const semana = porId("semana");
@@ -115,11 +115,11 @@ export function Metas() {
   const metasPendentes = carregando(metasAno);
   const realizadoPendente = carregando(realizadoMes) || (aba === "ano" && carregando(totalAno));
 
-  const resumos = periodos.map((p) => ({
-    periodo: p,
-    resumo: resumoDaAba(p, metasDias, realizados, totalAno.data),
+  const resumos = periodos.map((periodoMeta) => ({
+    periodo: periodoMeta,
+    resumo: resumoDaAba(periodoMeta, metasDias, realizados, totalAno.data),
   }));
-  const resumoAtivo = resumos.find((r) => r.periodo.id === aba)?.resumo;
+  const resumoAtivo = resumos.find((resumo) => resumo.periodo.id === aba)?.resumo;
 
   // Comparação: meta do período anterior inteiro e realizado até o mesmo ponto.
   let comparativo: Comparativo | null = null;
@@ -136,33 +136,33 @@ export function Metas() {
 
   // Séries diárias da parte decorrida (minigráficos).
   const diasDecorridos = ativa?.decorrido
-    ? realizados.filter((d) => d.data >= ativa.decorrido!.inicio && d.data <= ativa.decorrido!.fim)
+    ? realizados.filter((realizadoDia) => realizadoDia.data >= ativa.decorrido!.inicio && realizadoDia.data <= ativa.decorrido!.fim)
     : [];
-  const metaDoDia = new Map(metasDias.map((m) => [m.data, m.meta]));
+  const metaDoDia = new Map(metasDias.map((metaDia) => [metaDia.data, metaDia.meta]));
   const series = {
-    meta: diasDecorridos.map((d) => ({
-      data: d.data,
-      valor: metaDoDia.get(d.data) ?? null,
+    meta: diasDecorridos.map((realizadoDia) => ({
+      data: realizadoDia.data,
+      valor: metaDoDia.get(realizadoDia.data) ?? null,
     })),
-    realizado: diasDecorridos.map((d) => ({ data: d.data, valor: d.venda })),
-    atingimento: diasDecorridos.map((d) => {
-      const m = metaDoDia.get(d.data);
-      return { data: d.data, valor: m ? (d.venda / m) * 100 : null };
+    realizado: diasDecorridos.map((realizadoDia) => ({ data: realizadoDia.data, valor: realizadoDia.venda })),
+    atingimento: diasDecorridos.map((realizadoDia) => {
+      const metaDia = metaDoDia.get(realizadoDia.data);
+      return { data: realizadoDia.data, valor: metaDia ? (realizadoDia.venda / metaDia) * 100 : null };
     }),
   };
 
   const pontosCumprimento = mes && referencia ? curvaCumprimento(mes.periodo, referencia, metasDias, realizados) : [];
 
   const linhasDepartamento: LinhaAcompanhamento[] = ativa
-    ? (departamentos.data?.linhas ?? []).map((l) => calcularLinha(l, ativa))
+    ? (departamentos.data?.linhas ?? []).map((linhaMetaNivel) => calcularLinha(linhaMetaNivel, ativa))
     : [];
-  const comRitmo = linhasDepartamento.filter((l) => ritmo(l.resumo) != null);
+  const comRitmo = linhasDepartamento.filter((linhaAcompanhamento) => ritmo(linhaAcompanhamento.resumo) != null);
   const emRisco = comRitmo
-    .filter((l) => l.resumo.status === "abaixo")
-    .sort((a, b) => ritmo(a.resumo)! - ritmo(b.resumo)!);
+    .filter((linhaAcompanhamento) => linhaAcompanhamento.resumo.status === "abaixo")
+    .sort((primeiro, segundo) => ritmo(primeiro.resumo)! - ritmo(segundo.resumo)!);
   const melhores = comRitmo
-    .filter((l) => l.resumo.status === "acima" || l.resumo.status === "no-ritmo")
-    .sort((a, b) => ritmo(b.resumo)! - ritmo(a.resumo)!);
+    .filter((linhaAcompanhamento) => linhaAcompanhamento.resumo.status === "acima" || linhaAcompanhamento.resumo.status === "no-ritmo")
+    .sort((primeiro, segundo) => ritmo(segundo.resumo)! - ritmo(primeiro.resumo)!);
 
   const total: LinhaAcompanhamento | null = resumoAtivo
     ? {
@@ -185,7 +185,7 @@ export function Metas() {
     totalAno,
     totalComparacao,
     departamentos,
-  ].find((q) => q.isError);
+  ].find((consulta) => consulta.isError);
   const avisos: Aviso[] = [];
   if (erro) {
     avisos.push({
@@ -196,7 +196,7 @@ export function Metas() {
       acao: { label: "Tentar novamente", onClick: () => void erro.refetch() },
     });
   }
-  if (!metasPendentes && filtros.mes && !metasDias.some((m) => m.data.startsWith(filtros.mes) && m.meta > 0)) {
+  if (!metasPendentes && filtros.mes && !metasDias.some((metaDia) => metaDia.data.startsWith(filtros.mes) && metaDia.meta > 0)) {
     avisos.push({
       id: "sem-meta",
       nivel: "atencao",
@@ -240,7 +240,7 @@ export function Metas() {
           {filiaisQuery.data && opcoes.data && filtros.mes ? (
             <FiltrosMetasBar
               filtros={filtros}
-              onChange={(f) => setEstado(f)}
+              onChange={(novosFiltros) => setEstado(novosFiltros)}
               filiais={filiaisQuery.data.filiais}
               dataMinima={filiaisQuery.data.dataMinima}
               dataMaxima={filiaisQuery.data.dataMaxima}

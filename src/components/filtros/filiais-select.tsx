@@ -19,11 +19,11 @@ export function FiliaisSelect({
   const resumo = todas
     ? "Todas as filiais"
     : value.length === 1
-      ? (filiais.find((f) => f.codigo === value[0])?.descricao ?? "1 filial")
+      ? (filiais.find((filial) => filial.codigo === value[0])?.descricao ?? "1 filial")
       : `${value.length} filiais`;
 
   const toggle = (codigo: number) => {
-    const next = value.includes(codigo) ? value.filter((c) => c !== codigo) : [...value, codigo];
+    const next = value.includes(codigo) ? value.filter((selecionado) => selecionado !== codigo) : [...value, codigo];
     // Pelo menos uma filial precisa ficar selecionada.
     if (next.length) onChange(next);
   };
@@ -43,7 +43,7 @@ export function FiliaisSelect({
         <label className="flex h-8 cursor-pointer items-center gap-2.5 rounded-md px-2 text-sm font-medium hover:bg-secondary">
           <Checkbox
             checked={todas ? true : "indeterminate"}
-            onCheckedChange={() => onChange(todas ? [filiais[0].codigo] : filiais.map((f) => f.codigo))}
+            onCheckedChange={() => onChange(todas ? [filiais[0].codigo] : filiais.map((filial) => filial.codigo))}
           />
           Todas as filiais
           <span className="ml-auto text-xs font-normal text-muted-foreground tabular-nums">

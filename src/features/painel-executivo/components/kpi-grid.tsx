@@ -45,20 +45,20 @@ export function kpisDoPainel({
   carregando: Record<Fonte | "meta", boolean>;
 }) {
   const dias = resumo?.atual.dias ?? [];
-  const a: Indicadores = indicadores(dias);
-  const b: Indicadores = indicadores(resumo?.anterior.dias ?? []);
-  const c = carregando;
+  const atual: Indicadores = indicadores(dias);
+  const anterior: Indicadores = indicadores(resumo?.anterior.dias ?? []);
+  const carregandoKpis = carregando;
 
   // Venda zerada (ex.: origem Faturamento sem notas) conta como "sem dados".
-  const temVenda = a.cobertura.venda > 0 && a.venda !== 0;
-  const temPdv = a.cobertura.vendaPdv > 0;
-  const temDespesas = a.cobertura.despesas > 0;
-  const temDespesasAnterior = b.cobertura.despesas > 0;
-  const temVendaAnterior = b.cobertura.venda > 0 && b.venda !== 0;
-  const temPdvAnterior = b.cobertura.tickets > 0;
-  const temCancelAnterior = b.cobertura.cancelamentos > 0;
+  const temVenda = atual.cobertura.venda > 0 && atual.venda !== 0;
+  const temPdv = atual.cobertura.vendaPdv > 0;
+  const temDespesas = atual.cobertura.despesas > 0;
+  const temDespesasAnterior = anterior.cobertura.despesas > 0;
+  const temVendaAnterior = anterior.cobertura.venda > 0 && anterior.venda !== 0;
+  const temPdvAnterior = anterior.cobertura.tickets > 0;
+  const temCancelAnterior = anterior.cobertura.cancelamentos > 0;
 
-  const atingido = meta && meta.metaPeriodo ? percentual(a.venda, meta.metaPeriodo) : null;
+  const atingido = meta && meta.metaPeriodo ? percentual(atual.venda, meta.metaPeriodo) : null;
 
   return [
     {
@@ -70,14 +70,14 @@ export function kpisDoPainel({
           ajuda="Soma da venda (PDV e/ou faturamento, conforme a Origem) no período."
           icone={mdiChartBar}
           tom="green"
-          carregando={c.vendas}
-          valor={temVenda ? formatMoeda(a.venda) : <SemDados>Sem dados no período</SemDados>}
+          carregando={carregandoKpis.vendas}
+          valor={temVenda ? formatMoeda(atual.venda) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             temVenda && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                  <Delta value={variacao(a.venda, b.venda)} unidade="%" maiorMelhor />
-                  <Vs>{formatMoeda(b.venda)}</Vs>
+                  <Delta value={variacao(atual.venda, anterior.venda)} unidade="%" maiorMelhor />
+                  <Vs>{formatMoeda(anterior.venda)}</Vs>
                 </Comparativo>
               </>
             )
@@ -88,7 +88,7 @@ export function kpisDoPainel({
               kind="bar"
               color={corDoTom("green")}
               format={formatMoeda}
-              data={serieDiaria(dias, (i) => i.venda, "venda")}
+              data={serieDiaria(dias, (indicador) => indicador.venda, "venda")}
             />
           }
         />
@@ -103,14 +103,14 @@ export function kpisDoPainel({
           ajuda="Venda menos o custo da mercadoria vendida."
           icone={mdiSackOutline}
           tom="gold"
-          carregando={c.vendas}
-          valor={temVenda ? formatMoeda(a.lucro) : <SemDados>Sem dados no período</SemDados>}
+          carregando={carregandoKpis.vendas}
+          valor={temVenda ? formatMoeda(atual.lucro) : <SemDados>Sem dados no período</SemDados>}
           linhas={
             temVenda && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                  <Delta value={variacao(a.lucro, b.lucro)} unidade="%" maiorMelhor />
-                  <Vs>{formatMoeda(b.lucro)}</Vs>
+                  <Delta value={variacao(atual.lucro, anterior.lucro)} unidade="%" maiorMelhor />
+                  <Vs>{formatMoeda(anterior.lucro)}</Vs>
                 </Comparativo>
               </>
             )
@@ -121,7 +121,7 @@ export function kpisDoPainel({
               kind="bar"
               color={corDoTom("gold")}
               format={formatMoeda}
-              data={serieDiaria(dias, (i) => i.lucro, "venda")}
+              data={serieDiaria(dias, (indicador) => indicador.lucro, "venda")}
             />
           }
         />
@@ -136,14 +136,14 @@ export function kpisDoPainel({
           ajuda="Lucro bruto dividido pela venda. Variação em pontos percentuais."
           icone={mdiPercentOutline}
           tom="pink"
-          carregando={c.vendas}
-          valor={a.margem != null ? formatPercentual(a.margem) : <SemDados>Sem dados no período</SemDados>}
+          carregando={carregandoKpis.vendas}
+          valor={atual.margem != null ? formatPercentual(atual.margem) : <SemDados>Sem dados no período</SemDados>}
           linhas={
-            a.margem != null && (
+            atual.margem != null && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                  <Delta value={diferencaPp(a.margem, b.margem)} unidade="pp" maiorMelhor />
-                  <Vs>{formatPercentual(b.margem)}</Vs>
+                  <Delta value={diferencaPp(atual.margem, anterior.margem)} unidade="pp" maiorMelhor />
+                  <Vs>{formatPercentual(anterior.margem)}</Vs>
                 </Comparativo>
               </>
             )
@@ -154,7 +154,7 @@ export function kpisDoPainel({
               kind="area"
               color={corDoTom("pink")}
               format={formatPercentual}
-              data={serieDiaria(dias, (i) => i.margem, "venda")}
+              data={serieDiaria(dias, (indicador) => indicador.margem, "venda")}
             />
           }
         />
@@ -170,15 +170,15 @@ export function kpisDoPainel({
           ajuda="Soma das despesas lançadas no período (tabela despesa)."
           icone={mdiOfficeBuildingOutline}
           tom="blue"
-          carregando={c.despesas || c.vendas}
-          valor={temDespesas ? formatMoeda(a.despesas) : <SemDados>Sem despesas no período</SemDados>}
+          carregando={carregandoKpis.despesas || carregandoKpis.vendas}
+          valor={temDespesas ? formatMoeda(atual.despesas) : <SemDados>Sem despesas no período</SemDados>}
           linhas={
             temDespesas && (
               <>
-                <span className="tabular-nums">{formatPercentual(a.despesasSobreVenda)} da venda</span>
+                <span className="tabular-nums">{formatPercentual(atual.despesasSobreVenda)} da venda</span>
                 {temDespesasAnterior ? (
                   <Delta
-                    value={diferencaPp(a.despesasSobreVenda, b.despesasSobreVenda)}
+                    value={diferencaPp(atual.despesasSobreVenda, anterior.despesasSobreVenda)}
                     unidade="pp"
                     maiorMelhor={false}
                   />
@@ -194,7 +194,7 @@ export function kpisDoPainel({
               kind="bar"
               color={corDoTom("blue")}
               format={formatMoeda}
-              data={serieDiaria(dias, (i) => i.despesas, "despesas")}
+              data={serieDiaria(dias, (indicador) => indicador.despesas, "despesas")}
             />
           }
         />
@@ -210,15 +210,15 @@ export function kpisDoPainel({
           ajuda="Lucro bruto menos as despesas operacionais."
           icone={mdiFinance}
           tom="purple"
-          carregando={c.vendas || c.despesas}
-          valor={temVenda && temDespesas ? formatMoeda(a.resultado) : <SemDados>Sem despesas no período</SemDados>}
+          carregando={carregandoKpis.vendas || carregandoKpis.despesas}
+          valor={temVenda && temDespesas ? formatMoeda(atual.resultado) : <SemDados>Sem despesas no período</SemDados>}
           linhas={
             temVenda &&
             temDespesas && (
               <>
-                <span className="tabular-nums">{formatPercentual(a.resultadoSobreVenda)} da venda</span>
+                <span className="tabular-nums">{formatPercentual(atual.resultadoSobreVenda)} da venda</span>
                 {temDespesasAnterior && temVendaAnterior ? (
-                  <Delta value={variacao(a.resultado, b.resultado)} unidade="%" maiorMelhor />
+                  <Delta value={variacao(atual.resultado, anterior.resultado)} unidade="%" maiorMelhor />
                 ) : (
                   <span>sem despesas no período anterior</span>
                 )}
@@ -237,8 +237,8 @@ export function kpisDoPainel({
           ajuda="Venda do período dividida pela meta (previsão de venda por dia) do mesmo período."
           icone={mdiBullseyeArrow}
           tom="teal"
-          carregando={c.meta || c.vendas}
-          valor={atingido != null ? formatMoeda(a.venda) : <SemDados>Meta não cadastrada</SemDados>}
+          carregando={carregandoKpis.meta || carregandoKpis.vendas}
+          valor={atingido != null ? formatMoeda(atual.venda) : <SemDados>Meta não cadastrada</SemDados>}
           linhas={
             atingido != null &&
             meta && (
@@ -264,14 +264,14 @@ export function kpisDoPainel({
           icone={mdiCartOutline}
           tom="orange"
           badge="PDV"
-          carregando={c.pdv}
-          valor={a.ticketMedio != null ? formatMoeda(a.ticketMedio) : <SemDados>Sem dados no período</SemDados>}
+          carregando={carregandoKpis.pdv}
+          valor={atual.ticketMedio != null ? formatMoeda(atual.ticketMedio) : <SemDados>Sem dados no período</SemDados>}
           linhas={
-            a.ticketMedio != null && (
+            atual.ticketMedio != null && (
               <>
                 <Comparativo temAnterior={temPdvAnterior}>
-                  <Delta value={variacao(a.ticketMedio, b.ticketMedio)} unidade="%" maiorMelhor />
-                  <Vs>{formatMoeda(b.ticketMedio)}</Vs>
+                  <Delta value={variacao(atual.ticketMedio, anterior.ticketMedio)} unidade="%" maiorMelhor />
+                  <Vs>{formatMoeda(anterior.ticketMedio)}</Vs>
                 </Comparativo>
               </>
             )
@@ -282,7 +282,7 @@ export function kpisDoPainel({
               kind="area"
               color={corDoTom("orange")}
               format={formatMoeda}
-              data={serieDiaria(dias, (i) => i.ticketMedio, "tickets")}
+              data={serieDiaria(dias, (indicador) => indicador.ticketMedio, "tickets")}
             />
           }
         />
@@ -297,20 +297,20 @@ export function kpisDoPainel({
           ajuda="Total comprado dividido pela venda do período. Quanto menor, melhor."
           icone={mdiCubeOutline}
           tom="blue"
-          carregando={c.vendas}
+          carregando={carregandoKpis.vendas}
           valor={
-            a.compraSobreVenda != null ? (
-              formatPercentual(a.compraSobreVenda)
+            atual.compraSobreVenda != null ? (
+              formatPercentual(atual.compraSobreVenda)
             ) : (
               <SemDados>Sem dados no período</SemDados>
             )
           }
           linhas={
-            a.compraSobreVenda != null && (
+            atual.compraSobreVenda != null && (
               <>
                 <Comparativo temAnterior={temVendaAnterior}>
-                  <Delta value={diferencaPp(a.compraSobreVenda, b.compraSobreVenda)} unidade="pp" maiorMelhor={false} />
-                  <Vs>{formatPercentual(b.compraSobreVenda)}</Vs>
+                  <Delta value={diferencaPp(atual.compraSobreVenda, anterior.compraSobreVenda)} unidade="pp" maiorMelhor={false} />
+                  <Vs>{formatPercentual(anterior.compraSobreVenda)}</Vs>
                 </Comparativo>
               </>
             )
@@ -321,7 +321,7 @@ export function kpisDoPainel({
               kind="area"
               color={corDoTom("blue")}
               format={formatPercentual}
-              data={serieDiaria(dias, (i) => i.compraSobreVenda, "venda")}
+              data={serieDiaria(dias, (indicador) => indicador.compraSobreVenda, "venda")}
             />
           }
         />
@@ -338,18 +338,18 @@ export function kpisDoPainel({
           icone={mdiCartRemove}
           tom="coral"
           badge="PDV"
-          carregando={c.cancelamentos || c.pdv}
-          valor={a.cobertura.cancelamentos ? formatMoeda(a.cancelamentos) : <SemDados>Sem dados no período</SemDados>}
+          carregando={carregandoKpis.cancelamentos || carregandoKpis.pdv}
+          valor={atual.cobertura.cancelamentos ? formatMoeda(atual.cancelamentos) : <SemDados>Sem dados no período</SemDados>}
           linhas={
-            a.cobertura.cancelamentos > 0 && (
+            atual.cobertura.cancelamentos > 0 && (
               <>
                 {temPdv && (
-                  <span className="tabular-nums">{formatPercentual(a.cancelamentosSobreVenda)} da venda PDV</span>
+                  <span className="tabular-nums">{formatPercentual(atual.cancelamentosSobreVenda)} da venda PDV</span>
                 )}
                 <Comparativo temAnterior={temCancelAnterior}>
                   <span className="flex flex-wrap items-center gap-x-2">
-                    <Delta value={variacao(a.cancelamentos, b.cancelamentos)} unidade="%" maiorMelhor={false} />
-                    <Vs>{formatMoeda(b.cancelamentos)}</Vs>
+                    <Delta value={variacao(atual.cancelamentos, anterior.cancelamentos)} unidade="%" maiorMelhor={false} />
+                    <Vs>{formatMoeda(anterior.cancelamentos)}</Vs>
                   </span>
                 </Comparativo>
               </>
@@ -361,7 +361,7 @@ export function kpisDoPainel({
               kind="area"
               color={corDoTom("coral")}
               format={formatMoeda}
-              data={serieDiaria(dias, (i) => i.cancelamentos, "cancelamentos")}
+              data={serieDiaria(dias, (indicador) => indicador.cancelamentos, "cancelamentos")}
             />
           }
         />

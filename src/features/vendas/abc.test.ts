@@ -28,16 +28,16 @@ describe("curvaAbc (faixas padrão A 70% + B 20%)", () => {
   it("o primeiro produto é sempre A, mesmo sozinho com 100% do total", () => {
     const { classePorCodigo, curva } = curvaAbc([produto(1, 500)], "faturamento");
     expect(classePorCodigo.get(1)).toBe("A");
-    expect(curva.classes.find((c) => c.classe === "A")).toMatchObject({ produtos: 1, participacao: 100 });
+    expect(curva.classes.find((resumoClasse) => resumoClasse.classe === "A")).toMatchObject({ produtos: 1, participacao: 100 });
   });
 
   it("resumo por classe soma 100% e todos os produtos", () => {
     const { curva } = curvaAbc(produtos, "faturamento");
     expect(curva.totalProdutos).toBe(3);
-    expect(curva.classes.map((c) => c.classe)).toEqual(["A", "B", "C"]);
-    expect(curva.classes.reduce((t, c) => t + c.produtos, 0)).toBe(3);
-    expect(curva.classes.reduce((t, c) => t + c.participacao, 0)).toBeCloseTo(100);
-    expect(curva.classes.map((c) => c.valor)).toEqual([70, 20, 10]);
+    expect(curva.classes.map((resumoClasse) => resumoClasse.classe)).toEqual(["A", "B", "C"]);
+    expect(curva.classes.reduce((acumulado, classe) => acumulado + classe.produtos, 0)).toBe(3);
+    expect(curva.classes.reduce((acumulado, classe) => acumulado + classe.participacao, 0)).toBeCloseTo(100);
+    expect(curva.classes.map((resumoClasse) => resumoClasse.valor)).toEqual([70, 20, 10]);
   });
 
   it("a curva começa em 0/0 e termina em 100% dos produtos e 100% do acumulado", () => {
@@ -47,7 +47,7 @@ describe("curvaAbc (faixas padrão A 70% + B 20%)", () => {
   });
 
   it("amostra a curva em ~100 pontos quando há muitos produtos", () => {
-    const muitos = Array.from({ length: 1000 }, (_, i) => produto(i + 1, 1000 - i));
+    const muitos = Array.from({ length: 1000 }, (_, indice) => produto(indice + 1, 1000 - indice));
     const { curva } = curvaAbc(muitos, "faturamento");
     expect(curva.curva.length).toBeLessThanOrEqual(102);
     expect(curva.curva.at(-1)).toEqual({ produtos: 100, acumulado: 100 });
@@ -76,7 +76,7 @@ describe("curvaAbc (faixas padrão A 70% + B 20%)", () => {
     const { curva } = curvaAbc([], "faturamento");
     expect(curva.totalProdutos).toBe(0);
     expect(curva.curva).toEqual([{ produtos: 0, acumulado: 0 }]);
-    expect(curva.classes.every((c) => c.participacao === 0)).toBe(true);
+    expect(curva.classes.every((resumoClasse) => resumoClasse.participacao === 0)).toBe(true);
   });
 });
 
@@ -85,40 +85,40 @@ describe("montarProdutos", () => {
   const produtos = [produto(1, 1000, 900), produto(2, 200, 100), produto(3, 50, 40), produto(4, -5, 0)];
 
   it("devoluções (venda ≤ 0) não entram na curva nem nas listas", () => {
-    const r = montarProdutos(produtos, new Map());
-    expect(r.abc.faturamento.totalProdutos).toBe(3);
-    const todos = Object.values(r.listas).flat();
-    expect(todos.some((p) => p.codigo === 4)).toBe(false);
+    const resultado = montarProdutos(produtos, new Map());
+    expect(resultado.abc.faturamento.totalProdutos).toBe(3);
+    const todos = Object.values(resultado.listas).flat();
+    expect(todos.some((produtoResumo) => produtoResumo.codigo === 4)).toBe(false);
   });
 
   it("queda e crescimento só consideram produtos da classe A", () => {
-    const r = montarProdutos(produtos, new Map([[1, 2000], [2, 100], [3, 100]]));
-    expect(r.listas.queda.map((p) => p.codigo)).toEqual([1]); // p1 caiu 50%
-    expect(r.listas.crescimento).toEqual([]); // p2 cresceu, mas é B
+    const resultado = montarProdutos(produtos, new Map([[1, 2000], [2, 100], [3, 100]]));
+    expect(resultado.listas.queda.map((produtoResumo) => produtoResumo.codigo)).toEqual([1]); // p1 caiu 50%
+    expect(resultado.listas.crescimento).toEqual([]); // p2 cresceu, mas é B
   });
 
   it("variação é null sem venda no período anterior", () => {
-    const r = montarProdutos(produtos, new Map());
-    expect(r.listas["maior-margem"].every((p) => p.variacao === null)).toBe(true);
-    expect(r.listas.queda).toEqual([]);
+    const resultado = montarProdutos(produtos, new Map());
+    expect(resultado.listas["maior-margem"].every((produtoResumo) => produtoResumo.variacao === null)).toBe(true);
+    expect(resultado.listas.queda).toEqual([]);
   });
 
   it("maior e menor margem só entre as classes A e B, na ordem certa", () => {
-    const r = montarProdutos(produtos, new Map());
-    expect(r.listas["maior-margem"].map((p) => p.codigo)).toEqual([2, 1]); // 50% e 10%
-    expect(r.listas["menor-margem"].map((p) => p.codigo)).toEqual([1, 2]);
+    const resultado = montarProdutos(produtos, new Map());
+    expect(resultado.listas["maior-margem"].map((produtoResumo) => produtoResumo.codigo)).toEqual([2, 1]); // 50% e 10%
+    expect(resultado.listas["menor-margem"].map((produtoResumo) => produtoResumo.codigo)).toEqual([1, 2]);
   });
 
   it("calcula margem e lucro do produto", () => {
-    const r = montarProdutos(produtos, new Map());
-    const p2 = r.listas["maior-margem"].find((p) => p.codigo === 2)!;
+    const resultado = montarProdutos(produtos, new Map());
+    const p2 = resultado.listas["maior-margem"].find((produtoResumo) => produtoResumo.codigo === 2)!;
     expect(p2).toMatchObject({ lucro: 100, margem: 50, classe: "B" });
   });
 
   it("limita o tamanho das listas", () => {
-    const muitos = Array.from({ length: 10 }, (_, i) => produto(i + 1, 100, 10 * (i + 1)));
-    const r = montarProdutos(muitos, new Map(), 3);
-    expect(r.listas["maior-margem"]).toHaveLength(3);
-    expect(r.listas["menor-margem"]).toHaveLength(3);
+    const muitos = Array.from({ length: 10 }, (_, indice) => produto(indice + 1, 100, 10 * (indice + 1)));
+    const resultado = montarProdutos(muitos, new Map(), 3);
+    expect(resultado.listas["maior-margem"]).toHaveLength(3);
+    expect(resultado.listas["menor-margem"]).toHaveLength(3);
   });
 });

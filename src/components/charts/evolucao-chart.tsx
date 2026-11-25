@@ -106,7 +106,9 @@ function EvolucaoPlot({
           type="monotone"
           stroke={cor}
           strokeWidth={2}
+          // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
           dot={{ r: escala(detalhado).ponto, fill: cor, stroke: "var(--card)", strokeWidth: 2 }}
+          // eslint-disable-next-line id-length -- nomes da API do Recharts (r, x, y)
           activeDot={{ r: escala(detalhado).pontoAtivo, stroke: "var(--card)", strokeWidth: 2 }}
           connectNulls={false}
           isAnimationActive={false}
@@ -153,7 +155,7 @@ export function EvolucaoChart({
 }) {
   const [granularidade, setGranularidade] = useState<Granularidade>("dia");
   const dados = pontos(granularidade);
-  const temDados = dados.some((d) => !!d.atual || !!d.anterior);
+  const temDados = dados.some((pontoComparativo) => !!pontoComparativo.atual || !!pontoComparativo.anterior);
   const legenda: ItemLegenda[] = [
     { nome: nomeAtual, cor, forma: "circulo" },
     { nome: "Período anterior", cor, opacidade: 0.3 },
@@ -186,7 +188,7 @@ export function EvolucaoChart({
         className={`relative ${alturaGrafico} px-1 pb-2 pt-1`}
         ocupado={carregando}
         titulo={titulo}
-        descricao={`${nomeAtual} contra o período anterior, em agrupamento ${GRANULARIDADES.find((g) => g.value === granularidade)!.label.toLowerCase()}.`}
+        descricao={`${nomeAtual} contra o período anterior, em agrupamento ${GRANULARIDADES.find((opcao) => opcao.value === granularidade)!.label.toLowerCase()}.`}
         legenda={<LegendaGrafico itens={legenda} grande />}
         filtros={seletor}
         desabilitado={!temDados || carregando}

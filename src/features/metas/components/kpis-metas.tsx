@@ -73,10 +73,10 @@ export function kpisDasMetas({
   series: { meta: Serie; realizado: Serie; atingimento: Serie };
   carregando: { meta: boolean; realizado: boolean };
 }): ItemDoBloco[] {
-  const r = resumo;
-  const c = comparativo;
+  const resumoAtivo = resumo;
+  const comparacaoAtiva = comparativo;
   const semMeta = <SemDados>Sem meta cadastrada</SemDados>;
-  const aguardando = r.status === "aguardando";
+  const aguardando = resumoAtivo.status === "aguardando";
   const periodo = DO_PERIODO[aba];
   const mostrarSerie = aba !== "dia" && aba !== "ano";
 
@@ -91,13 +91,13 @@ export function kpisDasMetas({
           icone={mdiBullseyeArrow}
           tom="green"
           carregando={carregando.meta}
-          valor={r.meta != null ? formatMoeda(r.meta) : semMeta}
+          valor={resumoAtivo.meta != null ? formatMoeda(resumoAtivo.meta) : semMeta}
           linhas={
-            r.meta != null &&
-            c?.meta != null && (
+            resumoAtivo.meta != null &&
+            comparacaoAtiva?.meta != null && (
               <>
-                <Delta value={c.meta ? ((r.meta - c.meta) / c.meta) * 100 : null} unidade="%" maiorMelhor />
-                <Vs rotulo={rotuloComparacao}>{formatMoeda(c.meta)}</Vs>
+                <Delta value={comparacaoAtiva.meta ? ((resumoAtivo.meta - comparacaoAtiva.meta) / comparacaoAtiva.meta) * 100 : null} unidade="%" maiorMelhor />
+                <Vs rotulo={rotuloComparacao}>{formatMoeda(comparacaoAtiva.meta)}</Vs>
               </>
             )
           }
@@ -125,17 +125,17 @@ export function kpisDasMetas({
           icone={mdiCartOutline}
           tom="blue"
           carregando={carregando.realizado}
-          valor={aguardando ? <SemDados>Aguardando</SemDados> : formatMoeda(r.realizado)}
+          valor={aguardando ? <SemDados>Aguardando</SemDados> : formatMoeda(resumoAtivo.realizado)}
           linhas={
             !aguardando &&
-            c?.realizado != null && (
+            comparacaoAtiva?.realizado != null && (
               <>
                 <Delta
-                  value={c.realizado ? ((r.realizado - c.realizado) / c.realizado) * 100 : null}
+                  value={comparacaoAtiva.realizado ? ((resumoAtivo.realizado - comparacaoAtiva.realizado) / comparacaoAtiva.realizado) * 100 : null}
                   unidade="%"
                   maiorMelhor
                 />
-                <Vs rotulo={rotuloComparacao}>{formatMoeda(c.realizado)}</Vs>
+                <Vs rotulo={rotuloComparacao}>{formatMoeda(comparacaoAtiva.realizado)}</Vs>
               </>
             )
           }
@@ -163,13 +163,13 @@ export function kpisDasMetas({
           icone={mdiCheckDecagramOutline}
           tom="teal"
           carregando={carregando.meta || carregando.realizado}
-          valor={r.atingimento != null ? formatPercentual(r.atingimento) : semMeta}
+          valor={resumoAtivo.atingimento != null ? formatPercentual(resumoAtivo.atingimento) : semMeta}
           linhas={
-            r.atingimento != null &&
-            c?.atingimento != null && (
+            resumoAtivo.atingimento != null &&
+            comparacaoAtiva?.atingimento != null && (
               <>
-                <Delta value={diferencaPp(r.atingimento, c.atingimento)} unidade="pp" maiorMelhor />
-                <Vs rotulo={rotuloComparacao}>{formatPercentual(c.atingimento)}</Vs>
+                <Delta value={diferencaPp(resumoAtivo.atingimento, comparacaoAtiva.atingimento)} unidade="pp" maiorMelhor />
+                <Vs rotulo={rotuloComparacao}>{formatPercentual(comparacaoAtiva.atingimento)}</Vs>
               </>
             )
           }
@@ -197,13 +197,13 @@ export function kpisDasMetas({
           icone={mdiChartBar}
           tom="gold"
           carregando={carregando.meta || carregando.realizado}
-          valor={r.diferenca != null ? formatMoeda(r.diferenca) : semMeta}
+          valor={resumoAtivo.diferenca != null ? formatMoeda(resumoAtivo.diferenca) : semMeta}
           linhas={
-            r.diferenca != null &&
-            c?.diferenca != null && (
+            resumoAtivo.diferenca != null &&
+            comparacaoAtiva?.diferenca != null && (
               <>
-                <DeltaMoeda value={r.diferenca - c.diferenca} />
-                <Vs rotulo={rotuloComparacao}>{formatMoeda(c.diferenca)}</Vs>
+                <DeltaMoeda value={resumoAtivo.diferenca - comparacaoAtiva.diferenca} />
+                <Vs rotulo={rotuloComparacao}>{formatMoeda(comparacaoAtiva.diferenca)}</Vs>
               </>
             )
           }
@@ -220,12 +220,12 @@ export function kpisDasMetas({
           icone={mdiChartLineVariant}
           tom="purple"
           carregando={carregando.meta || carregando.realizado}
-          valor={r.projecao != null ? formatMoeda(r.projecao) : <SemDados>Aguardando</SemDados>}
+          valor={resumoAtivo.projecao != null ? formatMoeda(resumoAtivo.projecao) : <SemDados>Aguardando</SemDados>}
           linhas={
-            r.projecaoSobreMeta != null && (
+            resumoAtivo.projecaoSobreMeta != null && (
               <span className="tabular-nums">
-                <span className={`font-semibold ${r.projecaoSobreMeta >= 100 ? "text-success" : "text-error"}`}>
-                  {formatPercentual(r.projecaoSobreMeta)}
+                <span className={`font-semibold ${resumoAtivo.projecaoSobreMeta >= 100 ? "text-success" : "text-error"}`}>
+                  {formatPercentual(resumoAtivo.projecaoSobreMeta)}
                 </span>{" "}
                 da meta
               </span>
@@ -246,12 +246,12 @@ export function kpisDasMetas({
           carregando={carregando.meta || carregando.realizado}
           valor={
             <span className="inline-flex pt-0.5">
-              <StatusMetaBadge status={r.status} destaque />
+              <StatusMetaBadge status={resumoAtivo.status} destaque />
             </span>
           }
           linhas={
-            r.metaEsperada != null &&
-            !aguardando && <span className="tabular-nums">Ritmo esperado: {formatMoeda(r.metaEsperada)}</span>
+            resumoAtivo.metaEsperada != null &&
+            !aguardando && <span className="tabular-nums">Ritmo esperado: {formatMoeda(resumoAtivo.metaEsperada)}</span>
           }
         />
       ),

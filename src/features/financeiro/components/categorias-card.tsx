@@ -30,7 +30,7 @@ function Lista({
   /** Janela ampliada: barras e textos maiores. */
   detalhado?: boolean;
 }) {
-  const maior = Math.max(...categorias.map((c) => c.valor), 1);
+  const maior = Math.max(...categorias.map((categoria) => categoria.valor), 1);
   return (
     <div className="min-w-0">
       <div className={`mb-1 truncate font-semibold ${detalhado ? "text-sm" : "text-xs"}`} style={{ color: cor }}>
@@ -40,25 +40,25 @@ function Lista({
         <p className="py-4 text-xs text-muted-foreground">Sem movimento realizado.</p>
       ) : (
         <ul className={`flex flex-col ${detalhado ? "gap-2" : "gap-1"}`}>
-          {categorias.map((c) => (
+          {categorias.map((categoria) => (
             <li
-              key={c.categoria}
+              key={categoria.categoria}
               className={`grid items-center gap-1.5 ${
                 detalhado
                   ? "grid-cols-[minmax(0,1fr)_minmax(5rem,10rem)_7.5rem] text-sm"
                   : "grid-cols-[minmax(0,1fr)_3rem_6.5rem] text-[11px]"
               }`}
-              title={`${c.categoria}: ${formatMoeda(c.valor)} (${formatPercentual(c.participacao)})`}
+              title={`${categoria.categoria}: ${formatMoeda(categoria.valor)} (${formatPercentual(categoria.participacao)})`}
             >
-              <span className="truncate">{c.categoria}</span>
+              <span className="truncate">{categoria.categoria}</span>
               <span className={`${detalhado ? "h-3" : "h-2"} rounded-sm bg-secondary`}>
                 <span
                   className="block h-full rounded-sm"
-                  style={{ width: `${(c.valor / maior) * 100}%`, background: cor }}
+                  style={{ width: `${(categoria.valor / maior) * 100}%`, background: cor }}
                 />
               </span>
               <span className="whitespace-nowrap text-right tabular-nums text-muted-foreground">
-                {medida === "valor" ? formatMoeda(c.valor) : formatPercentual(c.participacao)}
+                {medida === "valor" ? formatMoeda(categoria.valor) : formatPercentual(categoria.participacao)}
               </span>
             </li>
           ))}

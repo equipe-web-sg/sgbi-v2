@@ -1,8 +1,8 @@
 // Cálculos básicos comuns às telas.
 
 /** a / b × 100, ou null quando o divisor é zero. */
-export function percentual(a: number, b: number): number | null {
-  return b ? (a / b) * 100 : null;
+export function percentual(parte: number, total: number): number | null {
+  return total ? (parte / total) * 100 : null;
 }
 
 /** Variação % de `atual` sobre `anterior`. */

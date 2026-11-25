@@ -26,7 +26,7 @@ const NIVEIS: { value: Nivel; label: string }[] = [
 
 export type TotaisCupons = Pick<LinhaCuponsNivel, "cupons" | "itens" | "cuponsAnterior" | "itensAnterior">;
 
-const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) => q.isPending || q.isPlaceholderData;
+const carregando = (consulta: { isPending: boolean; isPlaceholderData: boolean }) => consulta.isPending || consulta.isPlaceholderData;
 
 /** Célula de cupons: spinner enquanto a consulta lenta (logpdv) não chega. */
 function Pendente({ children, valor }: { children: React.ReactNode; valor: unknown }) {
@@ -41,49 +41,49 @@ function Pendente({ children, valor }: { children: React.ReactNode; valor: unkno
   return children;
 }
 
-const delta = (v: number | null | undefined, unidade: "%" | "pp") => <Delta value={v ?? null} unidade={unidade} maiorMelhor />;
+const delta = (valor: number | null | undefined, unidade: "%" | "pp") => <Delta value={valor ?? null} unidade={unidade} maiorMelhor />;
 
 function colunasDesempenho(rotuloNivel: string): Coluna<LinhaDesempenho>[] {
   return [
-    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", cell: (l) => l.descricao, ordenar: (l) => l.descricao },
-    { id: "venda", titulo: "Venda", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.venda), ordenar: (l) => l.venda },
-    { id: "var-venda", titulo: "Venda", subtitulo: "Var. %", cell: (l) => delta(l.variacaoVenda, "%"), ordenar: (l) => l.variacaoVenda },
-    { id: "margem", titulo: "Margem Bruta", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.margem), ordenar: (l) => l.margem },
-    { id: "var-margem", titulo: "Margem Bruta", subtitulo: "Var. p.p.", cell: (l) => delta(l.variacaoMargemPp, "pp"), ordenar: (l) => l.variacaoMargemPp },
-    { id: "lucro", titulo: "Lucro Bruto", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.lucro), ordenar: (l) => l.lucro },
-    { id: "var-lucro", titulo: "Lucro Bruto", subtitulo: "Var. %", cell: (l) => delta(l.variacaoLucro, "%"), ordenar: (l) => l.variacaoLucro },
+    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", cell: (linhaDesempenho) => linhaDesempenho.descricao, ordenar: (linhaDesempenho) => linhaDesempenho.descricao },
+    { id: "venda", titulo: "Venda", subtitulo: "Valor", divisor: true, cell: (linhaDesempenho) => formatMoeda(linhaDesempenho.venda), ordenar: (linhaDesempenho) => linhaDesempenho.venda },
+    { id: "var-venda", titulo: "Venda", subtitulo: "Var. %", cell: (linhaDesempenho) => delta(linhaDesempenho.variacaoVenda, "%"), ordenar: (linhaDesempenho) => linhaDesempenho.variacaoVenda },
+    { id: "margem", titulo: "Margem Bruta", subtitulo: "%", divisor: true, cell: (linhaDesempenho) => formatPercentual(linhaDesempenho.margem), ordenar: (linhaDesempenho) => linhaDesempenho.margem },
+    { id: "var-margem", titulo: "Margem Bruta", subtitulo: "Var. p.p.", cell: (linhaDesempenho) => delta(linhaDesempenho.variacaoMargemPp, "pp"), ordenar: (linhaDesempenho) => linhaDesempenho.variacaoMargemPp },
+    { id: "lucro", titulo: "Lucro Bruto", subtitulo: "Valor", divisor: true, cell: (linhaDesempenho) => formatMoeda(linhaDesempenho.lucro), ordenar: (linhaDesempenho) => linhaDesempenho.lucro },
+    { id: "var-lucro", titulo: "Lucro Bruto", subtitulo: "Var. %", cell: (linhaDesempenho) => delta(linhaDesempenho.variacaoLucro, "%"), ordenar: (linhaDesempenho) => linhaDesempenho.variacaoLucro },
     {
       id: "cupons",
       titulo: "Cupons (PDV)",
       subtitulo: "Qtd",
       divisor: true,
       dica: "Cupons do PDV com ao menos um item do nível",
-      cell: (l) => <Pendente valor={l.cupons}>{formatInteiro(l.cupons ?? 0)}</Pendente>,
-      ordenar: (l) => l.cupons,
+      cell: (linhaDesempenho) => <Pendente valor={linhaDesempenho.cupons}>{formatInteiro(linhaDesempenho.cupons ?? 0)}</Pendente>,
+      ordenar: (linhaDesempenho) => linhaDesempenho.cupons,
     },
     {
       id: "var-cupons",
       titulo: "Cupons (PDV)",
       subtitulo: "Var. %",
-      cell: (l) => <Pendente valor={l.variacaoCupons}>{delta(l.variacaoCupons, "%")}</Pendente>,
-      ordenar: (l) => l.variacaoCupons,
+      cell: (linhaDesempenho) => <Pendente valor={linhaDesempenho.variacaoCupons}>{delta(linhaDesempenho.variacaoCupons, "%")}</Pendente>,
+      ordenar: (linhaDesempenho) => linhaDesempenho.variacaoCupons,
     },
     {
       id: "itens",
       titulo: "Itens/Cupom",
       subtitulo: "Qtd",
       divisor: true,
-      cell: (l) => <Pendente valor={l.itensPorCupom}>{formatDecimal(l.itensPorCupom)}</Pendente>,
-      ordenar: (l) => l.itensPorCupom,
+      cell: (linhaDesempenho) => <Pendente valor={linhaDesempenho.itensPorCupom}>{formatDecimal(linhaDesempenho.itensPorCupom)}</Pendente>,
+      ordenar: (linhaDesempenho) => linhaDesempenho.itensPorCupom,
     },
     {
       id: "var-itens",
       titulo: "Itens/Cupom",
       subtitulo: "Var. %",
-      cell: (l) => <Pendente valor={l.variacaoItensPorCupom}>{delta(l.variacaoItensPorCupom, "%")}</Pendente>,
-      ordenar: (l) => l.variacaoItensPorCupom,
+      cell: (linhaDesempenho) => <Pendente valor={linhaDesempenho.variacaoItensPorCupom}>{delta(linhaDesempenho.variacaoItensPorCupom, "%")}</Pendente>,
+      ordenar: (linhaDesempenho) => linhaDesempenho.variacaoItensPorCupom,
     },
-    { id: "participacao", titulo: "Participação", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.participacao), ordenar: (l) => l.participacao },
+    { id: "participacao", titulo: "Participação", subtitulo: "%", divisor: true, cell: (linhaDesempenho) => formatPercentual(linhaDesempenho.participacao), ordenar: (linhaDesempenho) => linhaDesempenho.participacao },
   ];
 }
 
@@ -100,11 +100,11 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
 
   // Níveis a partir da aba escolhida; os de baixo só carregam ao expandir uma linha.
   const niveis = ORDEM.slice(ORDEM.indexOf(nivel));
-  const abertosNoNivel = (n: Nivel) => [...abertos].some((chave) => chave.startsWith(`${n}:`));
-  const habilitado = (i: number) => i === 0 || (!!niveis[i] && abertosNoNivel(niveis[i - 1]));
+  const abertosNoNivel = (nivelAlvo: Nivel) => [...abertos].some((chave) => chave.startsWith(`${nivelAlvo}:`));
+  const habilitado = (indice: number) => indice === 0 || (!!niveis[indice] && abertosNoNivel(niveis[indice - 1]));
 
-  const nivelQuery = (i: number) => vendasQueries.niveis(filtros, niveis[i] ?? nivel);
-  const cuponsQuery = (i: number) => vendasQueries.cuponsNiveis(filtros, niveis[i] ?? nivel);
+  const nivelQuery = (indice: number) => vendasQueries.niveis(filtros, niveis[indice] ?? nivel);
+  const cuponsQuery = (indice: number) => vendasQueries.cuponsNiveis(filtros, niveis[indice] ?? nivel);
   // Número fixo de hooks: um par de consultas por nível possível.
   const vendas = [
     useQuery({ ...nivelQuery(0), enabled: nivelQuery(0).enabled !== false && habilitado(0) }),
@@ -118,27 +118,27 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
   ];
 
   const base = vendas[0];
-  const vendaTotal = (base.data?.linhas ?? []).reduce((t, l) => t + l.venda, 0);
+  const vendaTotal = (base.data?.linhas ?? []).reduce((acumulado, linhaVendaNivel) => acumulado + linhaVendaNivel.venda, 0);
 
   // Algumas centenas de linhas: calcular a cada render é barato.
-  const linhasPorNivel = niveis.map((_, i) => {
-    const cuponsPendentes = carregando(cupons[i]);
-    const porCodigo = new Map(cupons[i].data?.linhas.map((c) => [c.codigo, c]));
-    return (vendas[i].data?.linhas ?? []).map((l) =>
-      calcularDesempenho(l, cuponsPendentes ? undefined : (porCodigo.get(l.codigo) ?? null), vendaTotal),
+  const linhasPorNivel = niveis.map((_, indice) => {
+    const cuponsPendentes = carregando(cupons[indice]);
+    const porCodigo = new Map(cupons[indice].data?.linhas.map((linhaCuponsNivel) => [linhaCuponsNivel.codigo, linhaCuponsNivel]));
+    return (vendas[indice].data?.linhas ?? []).map((linhaVendaNivel) =>
+      calcularDesempenho(linhaVendaNivel, cuponsPendentes ? undefined : (porCodigo.get(linhaVendaNivel.codigo) ?? null), vendaTotal),
     );
   });
 
   const termo = buscaAdiada.trim().toLocaleLowerCase("pt-BR");
-  const raiz = linhasPorNivel[0].filter((l) => !termo || l.descricao.toLocaleLowerCase("pt-BR").includes(termo));
+  const raiz = linhasPorNivel[0].filter((linhaDesempenho) => !termo || linhaDesempenho.descricao.toLocaleLowerCase("pt-BR").includes(termo));
 
   // O React Compiler memoriza estes cálculos.
   const soma = (base.data?.linhas ?? []).reduce(
-    (t, l) => ({
-      venda: t.venda + l.venda,
-      custo: t.custo + l.custo,
-      vendaAnterior: t.vendaAnterior + l.vendaAnterior,
-      custoAnterior: t.custoAnterior + l.custoAnterior,
+    (acumulado, linhaVendaNivel) => ({
+      venda: acumulado.venda + linhaVendaNivel.venda,
+      custo: acumulado.custo + linhaVendaNivel.custo,
+      vendaAnterior: acumulado.vendaAnterior + linhaVendaNivel.vendaAnterior,
+      custoAnterior: acumulado.custoAnterior + linhaVendaNivel.custoAnterior,
     }),
     { venda: 0, custo: 0, vendaAnterior: 0, custoAnterior: 0 },
   );
@@ -158,29 +158,29 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
       return proximo;
     });
 
-  const rotuloNivel = NIVEIS.find((n) => n.value === nivel)!.label;
+  const rotuloNivel = NIVEIS.find((opcao) => opcao.value === nivel)!.label;
 
   const exportar = () => {
     const linhasCsv: (string | number | null | undefined)[][] = [];
     const adicionar = (profundidade: number, lista: LinhaDesempenho[]) => {
-      for (const l of lista) {
+      for (const linhaDesempenho of lista) {
         linhasCsv.push([
-          NIVEIS.find((n) => n.value === niveis[profundidade])!.label,
-          l.descricao,
-          l.venda,
-          l.variacaoVenda,
-          l.margem,
-          l.variacaoMargemPp,
-          l.lucro,
-          l.variacaoLucro,
-          l.cupons,
-          l.variacaoCupons,
-          l.itensPorCupom,
-          l.variacaoItensPorCupom,
-          l.participacao,
+          NIVEIS.find((opcao) => opcao.value === niveis[profundidade])!.label,
+          linhaDesempenho.descricao,
+          linhaDesempenho.venda,
+          linhaDesempenho.variacaoVenda,
+          linhaDesempenho.margem,
+          linhaDesempenho.variacaoMargemPp,
+          linhaDesempenho.lucro,
+          linhaDesempenho.variacaoLucro,
+          linhaDesempenho.cupons,
+          linhaDesempenho.variacaoCupons,
+          linhaDesempenho.itensPorCupom,
+          linhaDesempenho.variacaoItensPorCupom,
+          linhaDesempenho.participacao,
         ]);
-        if (abertos.has(`${niveis[profundidade]}:${l.codigo}`) && linhasPorNivel[profundidade + 1]) {
-          adicionar(profundidade + 1, linhasPorNivel[profundidade + 1].filter((f) => f.pai === l.codigo));
+        if (abertos.has(`${niveis[profundidade]}:${linhaDesempenho.codigo}`) && linhasPorNivel[profundidade + 1]) {
+          adicionar(profundidade + 1, linhasPorNivel[profundidade + 1].filter((filha) => filha.pai === linhaDesempenho.codigo));
         }
       }
     };
@@ -208,8 +208,8 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
             label="Nível"
             value={nivel}
             options={NIVEIS}
-            onChange={(n) => {
-              setNivel(n);
+            onChange={(novoNivel) => {
+              setNivel(novoNivel);
               setAbertos(new Set());
             }}
           />
@@ -223,7 +223,7 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
             <input
               type="search"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              onChange={(evento) => setBusca(evento.target.value)}
               placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
               className="h-9 w-48 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
             />
@@ -250,18 +250,18 @@ export function DesempenhoTable({ filtros, totalCupons }: { filtros: Filtros; to
             <DataTable
               colunas={colunasDesempenho(rotuloNivel)}
               linhas={raiz}
-              chave={(l, p) => `${niveis[p]}:${l.codigo}`}
+              chave={(linhaDesempenho, profundidade) => `${niveis[profundidade]}:${linhaDesempenho.codigo}`}
               total={total}
               rotuloTotal="Total"
               arvore={{
                 abertas: abertos,
                 alternar,
-                expansivel: (p) => p < niveis.length - 1,
-                filhos: (l, p) => ({
-                  linhas: linhasPorNivel[p + 1].filter((f) => f.pai === l.codigo),
-                  carregando: carregando(vendas[p + 1]),
+                expansivel: (profundidade) => profundidade < niveis.length - 1,
+                filhos: (linhaDesempenho, profundidade) => ({
+                  linhas: linhasPorNivel[profundidade + 1].filter((filha) => filha.pai === linhaDesempenho.codigo),
+                  carregando: carregando(vendas[profundidade + 1]),
                 }),
-                descricao: (l) => l.descricao,
+                descricao: (linhaDesempenho) => linhaDesempenho.descricao,
               }}
             />
           </div>

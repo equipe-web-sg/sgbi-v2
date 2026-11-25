@@ -3,25 +3,25 @@ import type { MetaDia, Periodo } from "./types";
 
 export type MetaMensal = { codigo: number; mes: string; meta: number; metaLucro: number };
 
-const dias = (p: Periodo) => daysBetween(p.inicio, p.fim) + 1;
+const dias = (periodo: Periodo) => daysBetween(periodo.inicio, periodo.fim) + 1;
 
-function intersecao(a: Periodo, b: Periodo): Periodo | null {
-  const inicio = a.inicio > b.inicio ? a.inicio : b.inicio;
-  const fim = a.fim < b.fim ? a.fim : b.fim;
+function intersecao(primeiro: Periodo, segundo: Periodo): Periodo | null {
+  const inicio = primeiro.inicio > segundo.inicio ? primeiro.inicio : segundo.inicio;
+  const fim = primeiro.fim < segundo.fim ? primeiro.fim : segundo.fim;
   return inicio <= fim ? { inicio, fim } : null;
 }
 
 /** Soma da meta diária no período; null quando nenhum dia do período tem meta cadastrada. */
-export function somaMetaDiaria(metas: MetaDia[], p: Periodo | null): { meta: number; metaLucro: number } | null {
-  if (!p) return null;
+export function somaMetaDiaria(metas: MetaDia[], periodo: Periodo | null): { meta: number; metaLucro: number } | null {
+  if (!periodo) return null;
   let meta = 0;
   let metaLucro = 0;
   let encontrou = false;
-  for (const d of metas) {
-    if (d.data < p.inicio || d.data > p.fim) continue;
+  for (const metaDia of metas) {
+    if (metaDia.data < periodo.inicio || metaDia.data > periodo.fim) continue;
     encontrou = true;
-    meta += d.meta;
-    metaLucro += d.metaLucro;
+    meta += metaDia.meta;
+    metaLucro += metaDia.metaLucro;
   }
   return encontrou ? { meta, metaLucro } : null;
 }
@@ -31,9 +31,9 @@ export function somaMetaDiaria(metas: MetaDia[], p: Periodo | null): { meta: num
  * meta mensal ÷ dias do mês × dias do intervalo, como o BI antigo
  * (`MetasRealizadoNeedleRepository`). Pendência P33.
  */
-function fracaoDoMes(mes: string, p: Periodo): number {
+function fracaoDoMes(mes: string, periodo: Periodo): number {
   const mesInteiro = { inicio: `${mes}-01`, fim: lastDayOfMonth(`${mes}-01`) };
-  const parte = intersecao(mesInteiro, p);
+  const parte = intersecao(mesInteiro, periodo);
   return parte ? dias(parte) / daysInMonth(mesInteiro.inicio) : 0;
 }
 
@@ -43,19 +43,19 @@ function fracaoDoMes(mes: string, p: Periodo): number {
  */
 export function metaNivelNoPeriodo(
   mensais: MetaMensal[],
-  p: Periodo | null,
+  periodo: Periodo | null,
 ): { meta: number; metaLucro: number } | null {
-  if (!p) return null;
-  const meses = new Set(mesesDoPeriodo(p));
+  if (!periodo) return null;
+  const meses = new Set(mesesDoPeriodo(periodo));
   let meta = 0;
   let metaLucro = 0;
   let encontrou = false;
-  for (const m of mensais) {
-    if (!meses.has(m.mes)) continue;
+  for (const metaMensal of mensais) {
+    if (!meses.has(metaMensal.mes)) continue;
     encontrou = true;
-    const fracao = fracaoDoMes(m.mes, p);
-    meta += m.meta * fracao;
-    metaLucro += m.metaLucro * fracao;
+    const fracao = fracaoDoMes(metaMensal.mes, periodo);
+    meta += metaMensal.meta * fracao;
+    metaLucro += metaMensal.metaLucro * fracao;
   }
   return encontrou ? { meta, metaLucro } : null;
 }
@@ -66,20 +66,20 @@ export function metaNivelNoPeriodo(
  */
 export function metaDiariaDoNivel(mensais: MetaMensal[]): MetaDia[] {
   const porMes = new Map<string, { meta: number; metaLucro: number }>();
-  for (const m of mensais) {
-    const atual = porMes.get(m.mes) ?? { meta: 0, metaLucro: 0 };
-    porMes.set(m.mes, { meta: atual.meta + m.meta, metaLucro: atual.metaLucro + m.metaLucro });
+  for (const metaMensal of mensais) {
+    const atual = porMes.get(metaMensal.mes) ?? { meta: 0, metaLucro: 0 };
+    porMes.set(metaMensal.mes, { meta: atual.meta + metaMensal.meta, metaLucro: atual.metaLucro + metaMensal.metaLucro });
   }
   const resultado: MetaDia[] = [];
   for (const [mes, total] of porMes) {
     const qtd = daysInMonth(`${mes}-01`);
-    for (let d = 1; d <= qtd; d++) {
+    for (let dia = 1; dia <= qtd; dia++) {
       resultado.push({
-        data: `${mes}-${String(d).padStart(2, "0")}`,
+        data: `${mes}-${String(dia).padStart(2, "0")}`,
         meta: total.meta / qtd,
         metaLucro: total.metaLucro / qtd,
       });
     }
   }
-  return resultado.sort((a, b) => a.data.localeCompare(b.data));
+  return resultado.sort((primeiro, segundo) => primeiro.data.localeCompare(segundo.data));
 }

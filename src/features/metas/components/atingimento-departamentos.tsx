@@ -28,24 +28,24 @@ function ListaAtingimento({
   detalhado?: boolean;
 }) {
   // Escala até o maior entre 100%, o esperado e o maior atingimento (com folga).
-  const maximo = Math.max(100, esperado ?? 0, ...linhas.map((l) => l.resumo.atingimento!)) * 1.05;
+  const maximo = Math.max(100, esperado ?? 0, ...linhas.map((linhaAtingimento) => linhaAtingimento.resumo.atingimento!)) * 1.05;
   return (
     <ul className={detalhado ? "flex flex-col gap-2" : "flex h-full flex-col justify-between"}>
-      {linhas.map((l) => {
-        const at = l.resumo.atingimento!;
+      {linhas.map((linhaAtingimento) => {
+        const at = linhaAtingimento.resumo.atingimento!;
         return (
           <li
-            key={l.codigo}
+            key={linhaAtingimento.codigo}
             className={`grid items-center gap-2 ${
               detalhado ? "grid-cols-[minmax(8rem,16rem)_1fr_4.5rem] text-sm" : "grid-cols-[minmax(5.5rem,8rem)_1fr_3.75rem] text-xs"
             }`}
-            title={`${l.descricao}: ${formatMoeda(l.resumo.realizado)} de ${formatMoeda(l.resumo.meta)}`}
+            title={`${linhaAtingimento.descricao}: ${formatMoeda(linhaAtingimento.resumo.realizado)} de ${formatMoeda(linhaAtingimento.resumo.meta)}`}
           >
-            <span className="truncate font-medium">{l.descricao}</span>
+            <span className="truncate font-medium">{linhaAtingimento.descricao}</span>
             <span className={`relative ${detalhado ? "h-4" : "h-3"} rounded-sm bg-secondary`}>
               <span
                 className="absolute inset-y-0 left-0 rounded-sm"
-                style={{ width: `${(Math.min(at, maximo) / maximo) * 100}%`, background: COR[l.resumo.status] }}
+                style={{ width: `${(Math.min(at, maximo) / maximo) * 100}%`, background: COR[linhaAtingimento.resumo.status] }}
               />
               {esperado != null && (
                 <span
@@ -58,7 +58,7 @@ function ListaAtingimento({
             <span className="text-right font-semibold tabular-nums">{formatPercentual(at)}</span>
             {detalhado && (
               <span className="col-span-full -mt-1 pl-1 text-xs tabular-nums text-muted-foreground">
-                {formatMoeda(l.resumo.realizado)} de {formatMoeda(l.resumo.meta)}
+                {formatMoeda(linhaAtingimento.resumo.realizado)} de {formatMoeda(linhaAtingimento.resumo.meta)}
               </span>
             )}
           </li>
@@ -85,7 +85,7 @@ export function AtingimentoDepartamentos({
   esperado: number | null;
   carregando: boolean;
 }) {
-  const todas = linhas.filter((l) => l.resumo.atingimento != null);
+  const todas = linhas.filter((linhaAtingimento) => linhaAtingimento.resumo.atingimento != null);
   const comMeta = todas.slice(0, 7);
 
   return (

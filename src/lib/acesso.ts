@@ -72,7 +72,7 @@ export function normalizarPlataforma(sistema: unknown): Plataforma {
 
 export function fontesAusentes(plataforma: Plataforma, fontes: readonly Fonte[]): Fonte[] {
   const ausentes = FONTES_AUSENTES[plataforma];
-  return fontes.filter((f) => ausentes.includes(f));
+  return fontes.filter((fonte) => ausentes.includes(fonte));
 }
 
 /**
@@ -82,7 +82,7 @@ export function fontesAusentes(plataforma: Plataforma, fontes: readonly Fonte[])
  */
 export function permitido(permitidos: readonly string[] | null, chave: string): boolean {
   if (permitidos === null) return true;
-  return permitidos.some((p) => p === chave || chave.startsWith(`${p}:`) || p.startsWith(`${chave}:`));
+  return permitidos.some((permissao) => permissao === chave || chave.startsWith(`${permissao}:`) || permissao.startsWith(`${chave}:`));
 }
 
 /** Por que a chave está bloqueada (a falta de dados da plataforma vem antes da permissão), ou `null`. */
@@ -95,23 +95,35 @@ export function bloqueio(acesso: Acesso, chave: string, fontes: readonly Fonte[]
 
 export const bloqueioDaTela = (acesso: Acesso, tela: Tela) => bloqueio(acesso, tela, TELAS[tela].fontes);
 
+/**
+ * O banco do BI ainda não recebeu nenhuma carga do headquarter: nenhuma filial com
+ * movimento. As telas que leem dados do banco (as que têm `fontes` em `TELAS`, não a
+ * DFC) só consultam com ao menos uma filial, então sem isso ficariam carregando para
+ * sempre. `undefined` = a lista ainda não chegou (não é "sem dados").
+ */
+export const bancoSemDados = (resposta: { filiais: readonly unknown[] } | undefined) =>
+  resposta !== undefined && resposta.filiais.length === 0;
+
+/** A tela consulta dados do banco do BI (a DFC, sem fonte de dados, não). */
+export const telaLeDoBanco = (tela: Tela) => TELAS[tela].fontes.length > 0;
+
 /** Só a plataforma (para habilitar consultas: a permissão por card esconde o card, e a rota checa de novo). */
 export const temFontes = (acesso: Acesso, fontes: readonly Fonte[]) =>
   fontesAusentes(acesso.plataforma, fontes).length === 0;
 
 /** "contas a pagar, contas a receber e vendas em cartão". */
 export function listaDeFontes(fontes: readonly Fonte[]): string {
-  const nomes = fontes.map((f) => FONTES[f]);
+  const nomes = fontes.map((fonte) => FONTES[fonte]);
   return nomes.length <= 1 ? (nomes[0] ?? "") : `${nomes.slice(0, -1).join(", ")} e ${nomes.at(-1)}`;
 }
 
 /** Texto curto do bloqueio, para cards e menu. */
-export function tituloDoBloqueio(b: Bloqueio): string {
-  return b.motivo === "plataforma" ? `Indisponível no ${PLATAFORMAS[b.plataforma]}` : "Sem permissão";
+export function tituloDoBloqueio(bloqueado: Bloqueio): string {
+  return bloqueado.motivo === "plataforma" ? `Indisponível no ${PLATAFORMAS[bloqueado.plataforma]}` : "Sem permissão";
 }
 
-export function detalheDoBloqueio(b: Bloqueio): string {
-  return b.motivo === "plataforma"
-    ? `O ${PLATAFORMAS[b.plataforma]} ainda não envia ao banco do BI: ${listaDeFontes(b.fontes)}.`
+export function detalheDoBloqueio(bloqueado: Bloqueio): string {
+  return bloqueado.motivo === "plataforma"
+    ? `O ${PLATAFORMAS[bloqueado.plataforma]} ainda não envia ao banco do BI: ${listaDeFontes(bloqueado.fontes)}.`
     : "Seu usuário não tem acesso a este conteúdo.";
 }

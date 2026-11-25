@@ -18,14 +18,14 @@ function preencher(periodo: Periodo, series: (PontoVendas[] | undefined)[]): Dia
     for (const ponto of serie ?? []) porDia.set(ponto.data, { ...porDia.get(ponto.data), ...ponto });
   }
   return eachDay(periodo).map((data) => {
-    const p = porDia.get(data);
+    const registro = porDia.get(data);
     return {
       data,
-      venda: p?.venda ?? null,
-      custo: p?.custo ?? null,
-      vendaPdv: p?.vendaPdv ?? null,
-      cupons: p?.cupons ?? null,
-      itens: p?.itens ?? null,
+      venda: registro?.venda ?? null,
+      custo: registro?.custo ?? null,
+      vendaPdv: registro?.vendaPdv ?? null,
+      cupons: registro?.cupons ?? null,
+      itens: registro?.itens ?? null,
     };
   });
 }
@@ -42,8 +42,8 @@ export function combinarSeries(
   series: (SerieVendasResponse | undefined)[],
 ): ResumoVendas {
   return {
-    atual: { periodo, dias: preencher(periodo, series.map((s) => s?.atual)) },
-    anterior: { periodo: anterior, dias: preencher(anterior, series.map((s) => s?.anterior)) },
+    atual: { periodo, dias: preencher(periodo, series.map((serie) => serie?.atual)) },
+    anterior: { periodo: anterior, dias: preencher(anterior, series.map((serie) => serie?.anterior)) },
   };
 }
 
@@ -59,7 +59,7 @@ export type IndicadoresVendas = Record<Campo, number> & {
 };
 
 export function indicadores(dias: DiaVendas[]): IndicadoresVendas {
-  const r = { cobertura: {} } as IndicadoresVendas;
+  const resultado = { cobertura: {} } as IndicadoresVendas;
   for (const campo of CAMPOS) {
     let total = 0;
     let cobertura = 0;
@@ -70,21 +70,21 @@ export function indicadores(dias: DiaVendas[]): IndicadoresVendas {
         cobertura++;
       }
     }
-    r[campo] = total;
-    r.cobertura[campo] = cobertura;
+    resultado[campo] = total;
+    resultado.cobertura[campo] = cobertura;
   }
-  r.lucro = r.venda - r.custo;
-  r.margem = percentual(r.lucro, r.venda);
+  resultado.lucro = resultado.venda - resultado.custo;
+  resultado.margem = percentual(resultado.lucro, resultado.venda);
   // Ticket e itens por cupom: tudo do logpdv (PDV), na mesma base dos cupons.
-  r.ticketMedio = r.cupons ? r.vendaPdv / r.cupons : null;
-  r.itensPorCupom = r.cupons ? r.itens / r.cupons : null;
-  return r;
+  resultado.ticketMedio = resultado.cupons ? resultado.vendaPdv / resultado.cupons : null;
+  resultado.itensPorCupom = resultado.cupons ? resultado.itens / resultado.cupons : null;
+  return resultado;
 }
 
 /** Série diária de um indicador para os sparklines (null = sem carga). */
 export function serieDiaria(
   dias: DiaVendas[],
-  fn: (i: IndicadoresVendas) => number | null,
+  fn: (indicador: IndicadoresVendas) => number | null,
   campoBase: Campo,
 ): { data: string; valor: number | null }[] {
   return dias.map((dia) => ({ data: dia.data, valor: dia[campoBase] == null ? null : fn(indicadores([dia])) }));

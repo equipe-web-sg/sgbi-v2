@@ -27,18 +27,18 @@ const SITUACOES: Record<Situacao, { label: string; icon: string; className: stri
   critico: { label: "Crítico", icon: mdiCloseCircle, className: "bg-negative-highlight text-error" },
 };
 
-const PONTOS_SITUACAO = (Object.keys(SITUACOES) as Situacao[]).map((k) => ({
-  label: SITUACOES[k].label,
-  classe: { bom: "bg-success", atencao: "bg-warning", critico: "bg-error" }[k],
+const PONTOS_SITUACAO = (Object.keys(SITUACOES) as Situacao[]).map((situacao) => ({
+  label: SITUACOES[situacao].label,
+  classe: { bom: "bg-success", atencao: "bg-warning", critico: "bg-error" }[situacao],
 }));
 
 function SituacaoBadge({ situacao }: { situacao: Situacao | null }) {
   if (!situacao) return <span className="text-muted-foreground">—</span>;
-  const s = SITUACOES[situacao];
+  const estilo = SITUACOES[situacao];
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 align-middle text-xs font-medium ${s.className}`}>
-      <Icon path={s.icon} size={0.6} aria-hidden />
-      {s.label}
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 align-middle text-xs font-medium ${estilo.className}`}>
+      <Icon path={estilo.icon} size={0.6} aria-hidden />
+      {estilo.label}
     </span>
   );
 }
@@ -52,11 +52,11 @@ function PontosCompra({ value }: { value: number | null }) {
 
 function totalizar(linhas: LinhaCalculada[]): LinhaCalculada {
   const soma = linhas.reduce(
-    (t, l) => ({
-      compra: t.compra + l.compra,
-      venda: t.venda + l.venda,
-      compraAnterior: t.compraAnterior + l.compraAnterior,
-      vendaAnterior: t.vendaAnterior + l.vendaAnterior,
+    (acumulado, linha) => ({
+      compra: acumulado.compra + linha.compra,
+      venda: acumulado.venda + linha.venda,
+      compraAnterior: acumulado.compraAnterior + linha.compraAnterior,
+      vendaAnterior: acumulado.vendaAnterior + linha.vendaAnterior,
     }),
     { compra: 0, venda: 0, compraAnterior: 0, vendaAnterior: 0 },
   );
@@ -67,30 +67,30 @@ const ORDEM_SITUACAO = { bom: 0, atencao: 1, critico: 2 } as const;
 
 function colunasDepartamentos(rotuloNivel: string): Coluna<LinhaCalculada>[] {
   return [
-    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", className: "font-medium", cell: (l) => l.descricao, ordenar: (l) => l.descricao },
-    { id: "compra", titulo: "Compras", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.compra), ordenar: (l) => l.compra },
+    { id: "nome", titulo: rotuloNivel, subtitulo: "Nome", align: "left", className: "font-medium", cell: (linhaCalculada) => linhaCalculada.descricao, ordenar: (linhaCalculada) => linhaCalculada.descricao },
+    { id: "compra", titulo: "Compras", subtitulo: "Valor", divisor: true, cell: (linhaCalculada) => formatMoeda(linhaCalculada.compra), ordenar: (linhaCalculada) => linhaCalculada.compra },
     {
       id: "var-compra",
       titulo: "Compras",
       subtitulo: "Var. %",
-      cell: (l) => <Delta value={l.variacaoCompra} unidade="%" maiorMelhor={false} />,
-      ordenar: (l) => l.variacaoCompra,
+      cell: (linhaCalculada) => <Delta value={linhaCalculada.variacaoCompra} unidade="%" maiorMelhor={false} />,
+      ordenar: (linhaCalculada) => linhaCalculada.variacaoCompra,
     },
-    { id: "venda", titulo: "Venda", subtitulo: "Valor", divisor: true, cell: (l) => formatMoeda(l.venda), ordenar: (l) => l.venda },
+    { id: "venda", titulo: "Venda", subtitulo: "Valor", divisor: true, cell: (linhaCalculada) => formatMoeda(linhaCalculada.venda), ordenar: (linhaCalculada) => linhaCalculada.venda },
     {
       id: "var-venda",
       titulo: "Venda",
       subtitulo: "Var. %",
-      cell: (l) => <Delta value={l.variacaoVenda} unidade="%" maiorMelhor />,
-      ordenar: (l) => l.variacaoVenda,
+      cell: (linhaCalculada) => <Delta value={linhaCalculada.variacaoVenda} unidade="%" maiorMelhor />,
+      ordenar: (linhaCalculada) => linhaCalculada.variacaoVenda,
     },
-    { id: "csv", titulo: "Compra sobre Venda", subtitulo: "%", divisor: true, cell: (l) => formatPercentual(l.compraSobreVenda), ordenar: (l) => l.compraSobreVenda },
+    { id: "csv", titulo: "Compra sobre Venda", subtitulo: "%", divisor: true, cell: (linhaCalculada) => formatPercentual(linhaCalculada.compraSobreVenda), ordenar: (linhaCalculada) => linhaCalculada.compraSobreVenda },
     {
       id: "var-csv",
       titulo: "Compra sobre Venda",
       subtitulo: "Var. p.p.",
-      cell: (l) => <PontosCompra value={l.variacaoPp} />,
-      ordenar: (l) => l.variacaoPp,
+      cell: (linhaCalculada) => <PontosCompra value={linhaCalculada.variacaoPp} />,
+      ordenar: (linhaCalculada) => linhaCalculada.variacaoPp,
     },
     {
       id: "situacao",
@@ -99,8 +99,8 @@ function colunasDepartamentos(rotuloNivel: string): Coluna<LinhaCalculada>[] {
       rotulo: "Situação",
       align: "center",
       divisor: true,
-      cell: (l) => <SituacaoBadge situacao={l.situacao} />,
-      ordenar: (l) => (l.situacao ? ORDEM_SITUACAO[l.situacao] : null),
+      cell: (linhaCalculada) => <SituacaoBadge situacao={linhaCalculada.situacao} />,
+      ordenar: (linhaCalculada) => (linhaCalculada.situacao ? ORDEM_SITUACAO[linhaCalculada.situacao] : null),
     },
   ];
 }
@@ -118,10 +118,10 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
   const linhas = useMemo(() => (data?.linhas ?? []).map(calcularLinha), [data]);
   const filtradas = useMemo(() => {
     const termo = buscaAdiada.trim().toLocaleLowerCase("pt-BR");
-    return termo ? linhas.filter((l) => l.descricao.toLocaleLowerCase("pt-BR").includes(termo)) : linhas;
+    return termo ? linhas.filter((linhaCalculada) => linhaCalculada.descricao.toLocaleLowerCase("pt-BR").includes(termo)) : linhas;
   }, [linhas, buscaAdiada]);
   const total = useMemo(() => totalizar(linhas), [linhas]);
-  const rotuloNivel = NIVEIS.find((n) => n.value === nivel)!.label;
+  const rotuloNivel = NIVEIS.find((opcao) => opcao.value === nivel)!.label;
 
   return (
     <Card className="h-full min-w-0">
@@ -142,7 +142,7 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
             <input
               type="search"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              onChange={(evento) => setBusca(evento.target.value)}
               placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
               className="h-9 w-52 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
             />
@@ -162,7 +162,7 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
             <DataTable
               colunas={colunasDepartamentos(rotuloNivel)}
               linhas={filtradas}
-              chave={(l) => String(l.codigo)}
+              chave={(linhaCalculada) => String(linhaCalculada.codigo)}
               total={total}
               rotuloTotal="Total"
             />

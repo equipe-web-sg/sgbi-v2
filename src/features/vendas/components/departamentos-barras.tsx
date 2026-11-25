@@ -16,7 +16,7 @@ const MEDIDAS: { value: Medida; label: string }[] = [
   { value: "lucro", label: "Lucro bruto (R$)" },
 ];
 
-const valorDe = (l: LinhaVendaNivel, medida: Medida) => (medida === "venda" ? l.venda : l.venda - l.custo);
+const valorDe = (linha: LinhaVendaNivel, medida: Medida) => (medida === "venda" ? linha.venda : linha.venda - linha.custo);
 
 type ItemBarra = { codigo: number; descricao: string; valor: number };
 
@@ -30,10 +30,10 @@ function ListaDepartamentos({
   /** Janela ampliada: todos os departamentos, em linhas maiores. */
   detalhado?: boolean;
 }) {
-  const maior = Math.max(...itens.map((i) => Math.abs(i.valor)), 1);
+  const maior = Math.max(...itens.map((itemBarra) => Math.abs(itemBarra.valor)), 1);
   return (
     <ul className={detalhado ? "flex flex-col gap-2" : "flex h-full flex-col justify-between"}>
-      {itens.map((item, i) => (
+      {itens.map((item, indice) => (
         <li
           key={item.codigo}
           className={`grid items-center gap-2 ${
@@ -52,7 +52,7 @@ function ListaDepartamentos({
                 width: `${(Math.max(item.valor, 0) / maior) * 100}%`,
                 background: "var(--chart-1)",
                 // Os primeiros mais fortes, como no BI antigo.
-                opacity: item.codigo === -1 ? 0.35 : Math.max(1 - i * 0.07, detalhado ? 0.4 : 0),
+                opacity: item.codigo === -1 ? 0.35 : Math.max(1 - indice * 0.07, detalhado ? 0.4 : 0),
               }}
             />
           </span>
@@ -82,19 +82,19 @@ export function DepartamentosBarras({
 }) {
   const [medida, setMedida] = useState<Medida>("venda");
   const ordenadas = [...(linhas ?? [])]
-    .map((l) => ({ codigo: l.codigo, descricao: l.descricao, valor: valorDe(l, medida) }))
-    .filter((l) => l.valor !== 0)
-    .sort((a, b) => b.valor - a.valor);
+    .map((linha) => ({ codigo: linha.codigo, descricao: linha.descricao, valor: valorDe(linha, medida) }))
+    .filter((linha) => linha.valor !== 0)
+    .sort((primeiro, segundo) => segundo.valor - primeiro.valor);
 
-  const n = VENDAS_CONFIG.departamentosNoGrafico;
+  const limite = VENDAS_CONFIG.departamentosNoGrafico;
   const itens =
-    ordenadas.length > n + 1
+    ordenadas.length > limite + 1
       ? [
-          ...ordenadas.slice(0, n),
-          { codigo: -1, descricao: "Outros", valor: ordenadas.slice(n).reduce((t, l) => t + l.valor, 0) },
+          ...ordenadas.slice(0, limite),
+          { codigo: -1, descricao: "Outros", valor: ordenadas.slice(limite).reduce((acumulado, linha) => acumulado + linha.valor, 0) },
         ]
       : ordenadas;
-  const total = ordenadas.reduce((t, l) => t + l.valor, 0);
+  const total = ordenadas.reduce((acumulado, linha) => acumulado + linha.valor, 0);
 
   const seletor = (
     <Select
@@ -117,7 +117,7 @@ export function DepartamentosBarras({
         className="relative min-h-0 flex-1 px-4 pb-2 pt-1.5"
         ocupado={carregando}
         titulo="Vendas por Departamento"
-        descricao={`${MEDIDAS.find((m) => m.value === medida)!.label} de todos os departamentos, com a participação no total.`}
+        descricao={`${MEDIDAS.find((opcao) => opcao.value === medida)!.label} de todos os departamentos, com a participação no total.`}
         filtros={seletor}
         desabilitado={!ordenadas.length || carregando}
         rolavel

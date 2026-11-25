@@ -21,7 +21,7 @@ import {
   vendaDoIntervalo,
 } from "../compute";
 import { periodoComparacao } from "@/lib/date";
-import { PERIODO_PADRAO } from "../config";
+import { periodoPadrao } from "../config";
 import { formatData, formatMoedaCompacta, formatMoeda, formatPercentual } from "@/lib/format";
 import { painelQueries } from "../queries";
 import type { Filtros } from "../types";
@@ -38,18 +38,18 @@ type FiltrosEstado = Omit<Filtros, "filiais"> & { filiais: number[] | null };
 
 export function PainelExecutivo() {
   const filiaisQuery = useQuery(painelQueries.filiais());
-  const [estado, setEstado] = useState<FiltrosEstado>({
-    periodo: PERIODO_PADRAO,
+  const [estado, setEstado] = useState<FiltrosEstado>(() => ({
+    periodo: periodoPadrao(),
     comparacao: { tipo: "periodo-anterior" },
     // null = todas as filiais com movimento (resolvido quando a lista chega).
     filiais: null,
     origem: "todos",
-  });
+  }));
 
   const filtros: Filtros = useMemo(
     () => ({
       ...estado,
-      filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((f) => f.codigo) ?? [],
+      filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((filial) => filial.codigo) ?? [],
     }),
     [estado, filiaisQuery.data],
   );
@@ -65,7 +65,7 @@ export function PainelExecutivo() {
   const departamentos = useQuery(se(painelQueries.departamentos(filtros, "departamento"), ["venda", "compra"]));
 
   // Carregando = primeira carga ou troca de filtro (dados anteriores ficam cobertos).
-  const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) => q.isPending || q.isPlaceholderData;
+  const carregando = (consulta: { isPending: boolean; isPlaceholderData: boolean }) => consulta.isPending || consulta.isPlaceholderData;
   const fontesCarregando = {
     vendas: carregando(vendas),
     pdv: carregando(pdv),
@@ -95,7 +95,7 @@ export function PainelExecutivo() {
     );
   }, [alertasCarregando, resumo, departamentos.data]);
 
-  const erro = [filiaisQuery, vendas, pdv, cancelamentos, despesas, meta, departamentos].find((q) => q.isError);
+  const erro = [filiaisQuery, vendas, pdv, cancelamentos, despesas, meta, departamentos].find((consulta) => consulta.isError);
 
   // Dias sem carga distorcem a comparação: avisa em vez de esconder.
   const lacunas = useMemo(() => {
@@ -154,7 +154,7 @@ export function PainelExecutivo() {
           {filiaisQuery.data ? (
             <FiltrosBar
               filtros={filtros}
-              onChange={(f) => setEstado(f)}
+              onChange={(novosFiltros) => setEstado(novosFiltros)}
               filiais={filiaisQuery.data.filiais}
               dataMinima={filiaisQuery.data.dataMinima}
               dataMaxima={filiaisQuery.data.dataMaxima}
@@ -169,7 +169,7 @@ export function PainelExecutivo() {
             grade={grade}
             rotulos={ROTULOS}
             rotulosBlocos={{
-              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((k) => [k.id, k.titulo])) },
+              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((kpi) => [kpi.id, kpi.titulo])) },
             }}
           />
         </div>
@@ -189,7 +189,7 @@ export function PainelExecutivo() {
               cor="var(--chart-1)"
               formatValor={formatMoeda}
               formatEixo={formatMoedaCompacta}
-              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, vendaDoIntervalo)}
+              pontos={(granularidade) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, granularidade, vendaDoIntervalo)}
               carregando={fontesCarregando.vendas}
               alturaGrafico="min-h-0 flex-1"
             />
@@ -200,10 +200,10 @@ export function PainelExecutivo() {
               nomeAtual="Margem atual"
               cor="var(--chart-5)"
               formatValor={formatPercentual}
-              formatEixo={(v) => `${Math.round(v)}%`}
+              formatEixo={(valor) => `${Math.round(valor)}%`}
               larguraEixo={44}
               eixoDesdeZero
-              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, margemDoIntervalo)}
+              pontos={(granularidade) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, granularidade, margemDoIntervalo)}
               carregando={fontesCarregando.vendas}
               alturaGrafico="min-h-0 flex-1"
             />

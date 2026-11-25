@@ -49,9 +49,9 @@ export function FiltrosMetasBar({
           aria-label="Mês de referência"
           className="w-48"
           value={filtros.mes}
-          options={meses.map((m) => ({
-            value: m,
-            label: `${formatMesAno(m)}${comMeta.has(m) ? "" : " · sem meta"}`,
+          options={meses.map((mes) => ({
+            value: mes,
+            label: `${formatMesAno(mes)}${comMeta.has(mes) ? "" : " · sem meta"}`,
           }))}
           onValueChange={(mes) => onChange({ ...filtros, mes })}
         />
@@ -68,9 +68,9 @@ export function FiltrosMetasBar({
           value={filtros.departamento == null ? TODOS : String(filtros.departamento)}
           options={[
             { value: TODOS, label: "Todos" },
-            ...departamentos.map((d) => ({ value: String(d.codigo), label: d.descricao })),
+            ...departamentos.map((departamento) => ({ value: String(departamento.codigo), label: departamento.descricao })),
           ]}
-          onValueChange={(v) => onChange({ ...filtros, departamento: v === TODOS ? null : Number(v) })}
+          onValueChange={(valor) => onChange({ ...filtros, departamento: valor === TODOS ? null : Number(valor) })}
         />
       </Field>
 

@@ -43,7 +43,7 @@ function custoPorOrigem(origem: Origem) {
 }
 
 const sum = (column: AnyColumn | SQL) => sql<number>`coalesce(sum(${column}), 0)`.mapWith(Number);
-const pad = (n: number) => String(n).padStart(2, "0");
+const pad = (numero: number) => String(numero).padStart(2, "0");
 
 function filtroAnalise(periodo: Periodo, lojas: number[], departamento: number | null) {
   return and(
@@ -53,7 +53,7 @@ function filtroAnalise(periodo: Periodo, lojas: number[], departamento: number |
   );
 }
 
-const anos = (p: Periodo) => [Number(p.inicio.slice(0, 4)), Number(p.fim.slice(0, 4))] as const;
+const anos = (periodo: Periodo) => [Number(periodo.inicio.slice(0, 4)), Number(periodo.fim.slice(0, 4))] as const;
 
 /** Meta diária da loja (soma das filiais), de `previsao_dia`. */
 async function curvaDaLoja(periodo: Periodo, lojas: number[]): Promise<MetaDia[]> {
@@ -70,8 +70,8 @@ async function curvaDaLoja(periodo: Periodo, lojas: number[]): Promise<MetaDia[]
     .where(and(inArray(previsaoDia.codigoFilial, lojas), between(previsaoDia.ano, anoInicio, anoFim)))
     .groupBy(previsaoDia.ano, previsaoDia.mes, previsaoDia.codigoDia);
   return linhas
-    .map((l) => ({ data: `${l.ano}-${pad(l.mes!)}-${pad(l.dia!)}`, meta: l.meta, metaLucro: l.metaLucro }))
-    .filter((d) => d.data >= periodo.inicio && d.data <= periodo.fim);
+    .map((linha) => ({ data: `${linha.ano}-${pad(linha.mes!)}-${pad(linha.dia!)}`, meta: linha.meta, metaLucro: linha.metaLucro }))
+    .filter((dia) => dia.data >= periodo.inicio && dia.data <= periodo.fim);
 }
 
 /** Metas mensais de um nível (soma das filiais) nos meses do período. */
@@ -91,8 +91,8 @@ async function metasMensais(nivel: Nivel, periodo: Periodo, lojas: number[]): Pr
     .where(and(inArray(tabela.codigoFilial, lojas), between(tabela.ano, anoInicio, anoFim)))
     .groupBy(tabela.codigo, tabela.ano, tabela.mes);
   return linhas
-    .map((l) => ({ codigo: l.codigo!, mes: `${l.ano}-${pad(l.mes!)}`, meta: l.meta, metaLucro: l.metaLucro }))
-    .filter((l) => meses.has(l.mes));
+    .map((linha) => ({ codigo: linha.codigo!, mes: `${linha.ano}-${pad(linha.mes!)}`, meta: linha.meta, metaLucro: linha.metaLucro }))
+    .filter((linha) => meses.has(linha.mes));
 }
 
 /** Meses com meta cadastrada e lista de departamentos para o filtro. */
@@ -112,7 +112,7 @@ export async function getOpcoes(lojas: number[]): Promise<OpcoesMetasResponse> {
       .orderBy(departamentos.descricao),
   ]);
   return {
-    mesesComMeta: meses.map((m) => `${m.ano}-${pad(m.mes!)}`).sort(),
+    mesesComMeta: meses.map((mes) => `${mes.ano}-${pad(mes.mes!)}`).sort(),
     departamentos: deps,
   };
 }
@@ -132,8 +132,8 @@ export async function getMetasDiarias(
 
   if (departamento == null) return curvaDaLoja(periodo, lojas);
   // Departamento: só há meta mensal, dividida igualmente pelos dias (P33).
-  const mensais = (await metasMensais("departamento", periodo, lojas)).filter((m) => m.codigo === departamento);
-  return metaDiariaDoNivel(mensais).filter((d) => d.data >= periodo.inicio && d.data <= periodo.fim);
+  const mensais = (await metasMensais("departamento", periodo, lojas)).filter((metaMensal) => metaMensal.codigo === departamento);
+  return metaDiariaDoNivel(mensais).filter((dia) => dia.data >= periodo.inicio && dia.data <= periodo.fim);
 }
 
 /** Venda e custo por dia (só os dias com carga). */
@@ -210,13 +210,13 @@ async function hierarquia(nivel: Nivel) {
     const linhas = await db
       .select({ codigo: departamentos.codigo, descricao: sql<string>`trim(${departamentos.descricao})` })
       .from(departamentos);
-    return linhas.map((l) => ({ ...l, pai: null as number | null, departamento: l.codigo }));
+    return linhas.map((linha) => ({ ...linha, pai: null as number | null, departamento: linha.codigo }));
   }
   if (nivel === "grupo") {
     const linhas = await db
       .select({ codigo: grupos.codigo, descricao: sql<string>`trim(${grupos.descricao})`, pai: grupos.departamento })
       .from(grupos);
-    return linhas.map((l) => ({ ...l, departamento: l.pai }));
+    return linhas.map((linha) => ({ ...linha, departamento: linha.pai }));
   }
   const linhas = await db
     .select({
@@ -227,7 +227,7 @@ async function hierarquia(nivel: Nivel) {
     })
     .from(subgrupos)
     .leftJoin(grupos, eq(grupos.codigo, subgrupos.grupo));
-  return linhas.map((l) => ({ ...l, departamento: l.departamento ?? -1 }));
+  return linhas.map((linha) => ({ ...linha, departamento: linha.departamento ?? -1 }));
 }
 
 /**
@@ -254,12 +254,12 @@ export async function getNiveisMetas(
     hierarquia(nivel),
   ]);
 
-  const porCodigo = new Map(itens.map((i) => [i.codigo, i]));
+  const porCodigo = new Map(itens.map((item) => [item.codigo, item]));
   const noFiltro = (codigo: number) => departamento == null || porCodigo.get(codigo)?.departamento === departamento;
-  const mensaisPorCodigo = Map.groupBy(mensais, (m) => m.codigo);
-  const atualPorCodigo = new Map(atual.map((a) => [a.codigo, a]));
-  const anteriorPorCodigo = new Map(anterior.map((a) => [a.codigo, a.venda]));
-  const codigos = new Set([...atual.map((a) => a.codigo), ...mensaisPorCodigo.keys()].filter(noFiltro));
+  const mensaisPorCodigo = Map.groupBy(mensais, (metaMensal) => metaMensal.codigo);
+  const atualPorCodigo = new Map(atual.map((registro) => [registro.codigo, registro]));
+  const anteriorPorCodigo = new Map(anterior.map((registro) => [registro.codigo, registro.venda]));
+  const codigos = new Set([...atual.map((registro) => registro.codigo), ...mensaisPorCodigo.keys()].filter(noFiltro));
 
   const linhas: LinhaMetaNivel[] = [...codigos].map((codigo) => {
     const metasDoCodigo = mensaisPorCodigo.get(codigo) ?? [];
@@ -283,7 +283,7 @@ export async function getNiveisMetas(
   return {
     nivel,
     linhas: linhas
-      .filter((l) => l.venda || l.vendaAnterior || l.meta)
-      .sort((a, b) => (b.meta ?? 0) - (a.meta ?? 0) || b.venda - a.venda),
+      .filter((linhaMetaNivel) => linhaMetaNivel.venda || linhaMetaNivel.vendaAnterior || linhaMetaNivel.meta)
+      .sort((registro, segundo) => (segundo.meta ?? 0) - (registro.meta ?? 0) || segundo.venda - registro.venda),
   };
 }

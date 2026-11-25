@@ -6,8 +6,15 @@ function required(name: string): string {
   return value;
 }
 
+/**
+ * Tudo é lido só quando usado (getters), nunca ao importar: o `next build` da
+ * imagem Docker não tem `.env` nem banco e importa estes módulos ao coletar as
+ * rotas. Quem precisa de uma variável falha na hora de usá-la.
+ */
 export const env = {
-  apiView: required("API_VIEW"),
+  get apiView() {
+    return required("API_VIEW");
+  },
   /**
    * Segredo que assina o cookie de sessão (D45). Lido só quando usado, para o
    * build sem `.env` continuar funcionando.
@@ -28,11 +35,13 @@ export const env = {
   get clientSlug() {
     return (process.env.CLIENT_SLUG ?? "").trim().replace(/^\/+|\/+$/g, "");
   },
-  db: {
-    host: required("DB_HOST"),
-    port: Number(process.env.DB_PORT ?? 3306),
-    user: required("DB_USER"),
-    password: required("DB_PASSWORD"),
-    database: required("DB_DATABASE"),
+  get db() {
+    return {
+      host: required("DB_HOST"),
+      port: Number(process.env.DB_PORT ?? 3306),
+      user: required("DB_USER"),
+      password: required("DB_PASSWORD"),
+      database: required("DB_DATABASE"),
+    };
   },
 };

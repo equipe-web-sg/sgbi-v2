@@ -2,8 +2,8 @@
 export function SituacaoPontos({ itens }: { itens: { label: string; classe: string }[] }) {
   return (
     <span className="inline-flex items-center justify-center gap-1.5">
-      {itens.map((i) => (
-        <span key={i.label} className={`size-2 rounded-full ${i.classe}`} title={i.label} aria-label={i.label} />
+      {itens.map((item) => (
+        <span key={item.label} className={`size-2 rounded-full ${item.classe}`} title={item.label} aria-label={item.label} />
       ))}
     </span>
   );

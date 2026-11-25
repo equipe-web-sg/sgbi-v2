@@ -61,7 +61,7 @@ export function FormLogin() {
           />
           <button
             type="button"
-            onClick={() => setVerSenha((v) => !v)}
+            onClick={() => setVerSenha((visivel) => !visivel)}
             aria-label={verSenha ? "Esconder a senha" : "Mostrar a senha"}
             aria-pressed={verSenha}
             className="absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-r-lg text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"

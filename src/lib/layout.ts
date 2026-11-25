@@ -1,6 +1,6 @@
 /**
  * Layout personalizável das telas (D43): grade de 12 colunas e linhas de altura
- * fixa (unidades). Cada card tem posição (`x`, `y`) e tamanho (`w`, `h`); os
+ * fixa (unidades). Cada card tem posição (`coluna`, `linha`) e tamanho (`largura`, `altura`); os
  * cards não se sobrepõem. Quando um card cresce, é movido ou trocado sobre
  * outro, quem ficar por baixo é empurrado para baixo; depois, todos sobem até
  * encostar no card de cima (ou no topo), sem mudar de tamanho, para não sobrar
@@ -14,11 +14,11 @@ export const COLUNAS = 12;
 export const MAX_COLUNAS_ITEM_BLOCO = 3;
 
 /**
- * `x` = coluna (0 a 11), `y` = linha (unidade de altura, a partir de 0), `w` =
- * largura em colunas, `h` = altura em unidades. Nos blocos internos (KPIs) só
- * `w` conta e a ordem é a da lista.
+ * `coluna` = coluna (0 a 11), `linha` = linha (unidade de altura, a partir de 0),
+ * `largura` = largura em colunas, `altura` = altura em unidades. Nos blocos
+ * internos (KPIs) só `largura` conta e a ordem é a da lista.
  */
-export type ItemLayout = { id: string; x: number; y: number; w: number; h: number; visivel: boolean };
+export type ItemLayout = { id: string; coluna: number; linha: number; largura: number; altura: number; visivel: boolean };
 export type Layout = {
   versao: number;
   itens: ItemLayout[];
@@ -26,24 +26,24 @@ export type Layout = {
   blocos: Record<string, ItemLayout[]>;
 };
 
-export type Tamanho = { w: number; h: number };
+export type Tamanho = { largura: number; altura: number };
 export type LimitesCard = { min: Tamanho; max: Tamanho };
 export type Limites = Record<string, LimitesCard>;
 /** Bordas que podem ser arrastadas para redimensionar. */
-export type Borda = "l" | "r" | "t" | "b" | "tl" | "tr" | "bl" | "br";
-export type Caixa = { x: number; y: number; w: number; h: number };
+export type Borda = "esquerda" | "direita" | "topo" | "base" | "topo-esquerda" | "topo-direita" | "base-esquerda" | "base-direita";
+export type Caixa = { coluna: number; linha: number; largura: number; altura: number };
 
-const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
-const SEM_LIMITE: LimitesCard = { min: { w: 1, h: 1 }, max: { w: COLUNAS, h: 40 } };
+const clamp = (valor: number, min: number, max: number) => Math.min(Math.max(valor, min), max);
+const SEM_LIMITE: LimitesCard = { min: { largura: 1, altura: 1 }, max: { largura: COLUNAS, altura: 40 } };
 export const limitesDe = (limites: Limites, id: string) => limites[id] ?? SEM_LIMITE;
 
-export const colide = (a: Caixa, b: Caixa) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+export const colide = (caixa: Caixa, outra: Caixa) => caixa.coluna < outra.coluna + outra.largura && outra.coluna < caixa.coluna + caixa.largura && caixa.linha < outra.linha + outra.altura && outra.linha < caixa.linha + caixa.altura;
 
-export const encontrar = (layout: Layout, id: string) => layout.itens.find((i) => i.id === id);
+export const encontrar = (layout: Layout, id: string) => layout.itens.find((itemLayout) => itemLayout.id === id);
 
 /** Linha seguinte ao card visível mais baixo (altura total ocupada, em unidades). */
 export const alturaTotal = (layout: Layout) =>
-  layout.itens.reduce((m, i) => (i.visivel ? Math.max(m, i.y + i.h) : m), 0);
+  layout.itens.reduce((acumulado, item) => (item.visivel ? Math.max(acumulado, item.linha + item.altura) : acumulado), 0);
 
 /**
  * Sobe cada card visível, de cima para baixo, até encostar no de cima (ou no
@@ -52,13 +52,13 @@ export const alturaTotal = (layout: Layout) =>
  */
 function compactar(itens: ItemLayout[]): ItemLayout[] {
   const colocados: ItemLayout[] = [];
-  for (const item of itens.filter((i) => i.visivel).sort((a, b) => a.y - b.y || a.x - b.x)) {
-    let y = item.y;
-    while (y > 0 && !colocados.some((c) => colide({ ...item, y: y - 1 }, c))) y--;
-    colocados.push(y === item.y ? item : { ...item, y });
+  for (const item of itens.filter((itemLayout) => itemLayout.visivel).sort((anterior, proximo) => anterior.linha - proximo.linha || anterior.coluna - proximo.coluna)) {
+    let linha = item.linha;
+    while (linha > 0 && !colocados.some((itemLayout) => colide({ ...item, linha: linha - 1 }, itemLayout))) linha--;
+    colocados.push(linha === item.linha ? item : { ...item, linha: linha });
   }
-  const porId = new Map(colocados.map((i) => [i.id, i]));
-  return itens.map((i) => porId.get(i.id) ?? i);
+  const porId = new Map(colocados.map((itemLayout) => [itemLayout.id, itemLayout]));
+  return itens.map((itemLayout) => porId.get(itemLayout.id) ?? itemLayout);
 }
 
 /**
@@ -67,37 +67,37 @@ function compactar(itens: ItemLayout[]): ItemLayout[] {
  * ninguém; depois todos sobem o que puderem (`compactar`). Ocultos não contam.
  */
 function acomodar(itens: ItemLayout[], primeiro: string[] = []): ItemLayout[] {
-  const fixos = primeiro.map((id) => itens.find((i) => i.id === id)).filter((i): i is ItemLayout => !!i);
-  const resto = itens.filter((i) => !primeiro.includes(i.id)).sort((a, b) => a.y - b.y || a.x - b.x);
+  const fixos = primeiro.map((id) => itens.find((candidato) => candidato.id === id)).filter((candidato): candidato is ItemLayout => !!candidato);
+  const resto = itens.filter((itemLayout) => !primeiro.includes(itemLayout.id)).sort((anterior, proximo) => anterior.linha - proximo.linha || anterior.coluna - proximo.coluna);
   const colocados: ItemLayout[] = [];
   for (const item of [...fixos, ...resto]) {
     if (!item.visivel) {
       colocados.push(item);
       continue;
     }
-    let y = item.y;
+    let linha = item.linha;
     for (;;) {
-      const batidos = colocados.filter((c) => c.visivel && colide({ ...item, y }, c));
+      const batidos = colocados.filter((itemLayout) => itemLayout.visivel && colide({ ...item, linha: linha }, itemLayout));
       if (!batidos.length) break;
-      y = Math.max(...batidos.map((c) => c.y + c.h));
+      linha = Math.max(...batidos.map((itemLayout) => itemLayout.linha + itemLayout.altura));
     }
-    colocados.push(y === item.y ? item : { ...item, y });
+    colocados.push(linha === item.linha ? item : { ...item, linha: linha });
   }
   // Mantém a ordem original da lista (estável para o React e para o salvo).
-  const porId = new Map(colocados.map((i) => [i.id, i]));
-  return compactar(itens.map((i) => porId.get(i.id)!));
+  const porId = new Map(colocados.map((itemLayout) => [itemLayout.id, itemLayout]));
+  return compactar(itens.map((itemLayout) => porId.get(itemLayout.id)!));
 }
 
 /** Card dentro da grade e dos limites de tamanho dele. */
 function dentro(item: ItemLayout, limites: Limites): ItemLayout {
   const { min, max } = limitesDe(limites, item.id);
-  const w = clamp(Math.round(item.w), min.w, Math.min(max.w, COLUNAS));
+  const largura = clamp(Math.round(item.largura), min.largura, Math.min(max.largura, COLUNAS));
   return {
     ...item,
-    w,
-    h: clamp(Math.round(item.h), min.h, max.h),
-    x: clamp(Math.round(item.x), 0, COLUNAS - w),
-    y: Math.max(0, Math.round(item.y)),
+    largura: largura,
+    altura: clamp(Math.round(item.altura), min.altura, max.altura),
+    coluna: clamp(Math.round(item.coluna), 0, COLUNAS - largura),
+    linha: Math.max(0, Math.round(item.linha)),
   };
 }
 
@@ -109,53 +109,53 @@ function dentro(item: ItemLayout, limites: Limites): ItemLayout {
 export function normalizar(salvo: Partial<Layout> | null | undefined, padrao: Layout, limites: Limites): Layout {
   if (!salvo || salvo.versao !== padrao.versao || !Array.isArray(salvo.itens)) return padrao;
 
-  const padraoPorId = new Map(padrao.itens.map((i) => [i.id, i]));
+  const padraoPorId = new Map(padrao.itens.map((itemLayout) => [itemLayout.id, itemLayout]));
   const vistos = new Set<string>();
   const itens: ItemLayout[] = [];
-  for (const i of salvo.itens) {
-    if (!i || !padraoPorId.has(i.id) || vistos.has(i.id)) continue;
-    vistos.add(i.id);
+  for (const itemLayout of salvo.itens) {
+    if (!itemLayout || !padraoPorId.has(itemLayout.id) || vistos.has(itemLayout.id)) continue;
+    vistos.add(itemLayout.id);
     itens.push(
       dentro(
         {
-          id: i.id,
-          x: Number(i.x) || 0,
-          y: Number(i.y) || 0,
-          w: Number(i.w) || 0,
-          h: Number(i.h) || 0,
-          visivel: i.visivel !== false,
+          id: itemLayout.id,
+          coluna: Number(itemLayout.coluna) || 0,
+          linha: Number(itemLayout.linha) || 0,
+          largura: Number(itemLayout.largura) || 0,
+          altura: Number(itemLayout.altura) || 0,
+          visivel: itemLayout.visivel !== false,
         },
         limites,
       ),
     );
   }
   let base = alturaTotal({ ...padrao, itens });
-  for (const novo of padrao.itens.filter((i) => !vistos.has(i.id))) {
-    itens.push({ ...novo, x: 0, y: base });
-    base += novo.h;
+  for (const novo of padrao.itens.filter((itemLayout) => !vistos.has(itemLayout.id))) {
+    itens.push({ ...novo, coluna: 0, linha: base });
+    base += novo.altura;
   }
 
   const blocos: Record<string, ItemLayout[]> = {};
   for (const [bloco, itensPadrao] of Object.entries(padrao.blocos)) {
     const salvos = Array.isArray(salvo.blocos?.[bloco]) ? salvo.blocos[bloco] : [];
-    const porId = new Map(itensPadrao.map((i) => [i.id, i]));
+    const porId = new Map(itensPadrao.map((itemLayout) => [itemLayout.id, itemLayout]));
     const lista = salvos
-      .filter((i) => i && porId.has(i.id))
-      .map((i) => ({
-        ...porId.get(i.id)!,
-        w: clamp(Math.round(Number(i.w) || 1), 1, MAX_COLUNAS_ITEM_BLOCO),
-        visivel: i.visivel !== false,
+      .filter((itemLayout) => itemLayout && porId.has(itemLayout.id))
+      .map((itemLayout) => ({
+        ...porId.get(itemLayout.id)!,
+        largura: clamp(Math.round(Number(itemLayout.largura) || 1), 1, MAX_COLUNAS_ITEM_BLOCO),
+        visivel: itemLayout.visivel !== false,
       }));
-    const presentes = new Set(lista.map((i) => i.id));
-    blocos[bloco] = [...lista, ...itensPadrao.filter((i) => !presentes.has(i.id)).map((i) => ({ ...i }))];
+    const presentes = new Set(lista.map((item) => item.id));
+    blocos[bloco] = [...lista, ...itensPadrao.filter((itemLayout) => !presentes.has(itemLayout.id)).map((itemLayout) => ({ ...itemLayout }))];
   }
 
   return { versao: padrao.versao, itens: acomodar(itens), blocos };
 }
 
-const comItem = (layout: Layout, id: string, f: (item: ItemLayout) => ItemLayout): Layout => ({
+const comItem = (layout: Layout, id: string, transformar: (item: ItemLayout) => ItemLayout): Layout => ({
   ...layout,
-  itens: layout.itens.map((i) => (i.id === id ? f(i) : i)),
+  itens: layout.itens.map((itemLayout) => (itemLayout.id === id ? transformar(itemLayout) : itemLayout)),
 });
 
 /**
@@ -167,28 +167,28 @@ export function redimensionar(layout: Layout, id: string, desejado: Caixa, borda
   const { min, max } = limitesDe(limites, id);
   const atual = encontrar(layout, id);
   if (!atual) return layout;
-  let { x, y, w, h } = atual;
-  if (borda.includes("l")) {
-    const direita = atual.x + atual.w;
-    x = clamp(desejado.x, Math.max(0, direita - max.w), direita - min.w);
-    w = direita - x;
-  } else if (borda.includes("r")) {
-    w = clamp(desejado.w, min.w, Math.min(max.w, COLUNAS - x));
+  let { coluna: coluna, linha: linha, largura: largura, altura: altura } = atual;
+  if (borda.includes("esquerda")) {
+    const direita = atual.coluna + atual.largura;
+    coluna = clamp(desejado.coluna, Math.max(0, direita - max.largura), direita - min.largura);
+    largura = direita - coluna;
+  } else if (borda.includes("direita")) {
+    largura = clamp(desejado.largura, min.largura, Math.min(max.largura, COLUNAS - coluna));
   }
-  if (borda.includes("t")) {
-    const base = atual.y + atual.h;
-    y = clamp(desejado.y, Math.max(0, base - max.h), base - min.h);
-    h = base - y;
-  } else if (borda.includes("b")) {
-    h = clamp(desejado.h, min.h, max.h);
+  if (borda.includes("topo")) {
+    const base = atual.linha + atual.altura;
+    linha = clamp(desejado.linha, Math.max(0, base - max.altura), base - min.altura);
+    altura = base - linha;
+  } else if (borda.includes("base")) {
+    altura = clamp(desejado.altura, min.altura, max.altura);
   }
-  if (x === atual.x && y === atual.y && w === atual.w && h === atual.h) return layout;
-  return { ...layout, itens: acomodar(comItem(layout, id, (i) => ({ ...i, x, y, w, h })).itens, [id]) };
+  if (coluna === atual.coluna && linha === atual.linha && largura === atual.largura && altura === atual.altura) return layout;
+  return { ...layout, itens: acomodar(comItem(layout, id, (itemLayout) => ({ ...itemLayout, coluna: coluna, linha: linha, largura: largura, altura: altura })).itens, [id]) };
 }
 
-/** Move o card para a coluna `x` e a linha `y`; quem ficar por baixo desce. */
-export function posicionar(layout: Layout, id: string, x: number, y: number, limites: Limites): Layout {
-  const movido = comItem(layout, id, (i) => dentro({ ...i, x, y }, limites));
+/** Move o card para a coluna e a linha indicadas; quem ficar por baixo desce. */
+export function posicionar(layout: Layout, id: string, coluna: number, linha: number, limites: Limites): Layout {
+  const movido = comItem(layout, id, (itemLayout) => dentro({ ...itemLayout, coluna: coluna, linha: linha }, limites));
   return { ...layout, itens: acomodar(movido.itens, [id]) };
 }
 
@@ -198,18 +198,18 @@ export function posicionar(layout: Layout, id: string, x: number, y: number, lim
  * sobrepuserem, ou baterem em outros, quem estiver por baixo desce.
  */
 export function trocar(layout: Layout, idA: string, idB: string, limites: Limites): Layout {
-  const a = encontrar(layout, idA);
-  const b = encontrar(layout, idB);
-  if (!a || !b || idA === idB) return layout;
-  const itens = layout.itens.map((i) =>
-    i.id === idA
-      ? dentro({ ...i, x: b.x, y: b.y }, limites)
-      : i.id === idB
-        ? dentro({ ...i, x: a.x, y: a.y }, limites)
-        : i,
+  const itemA = encontrar(layout, idA);
+  const itemB = encontrar(layout, idB);
+  if (!itemA || !itemB || idA === idB) return layout;
+  const itens = layout.itens.map((itemLayout) =>
+    itemLayout.id === idA
+      ? dentro({ ...itemLayout, coluna: itemB.coluna, linha: itemB.linha }, limites)
+      : itemLayout.id === idB
+        ? dentro({ ...itemLayout, coluna: itemA.coluna, linha: itemA.linha }, limites)
+        : itemLayout,
   );
   // Quem está mais acima fica parado; o outro desce se os dois ainda se sobrepuserem.
-  const ordem = a.y <= b.y ? [idB, idA] : [idA, idB];
+  const ordem = itemA.linha <= itemB.linha ? [idB, idA] : [idA, idB];
   return { ...layout, itens: acomodar(itens, ordem) };
 }
 
@@ -221,7 +221,7 @@ export function ocultar(layout: Layout, id: string): Layout {
 
 /** Mostra de novo no lugar de antes (ou mais acima, se houver espaço); quem estiver lá desce. */
 export function mostrar(layout: Layout, id: string): Layout {
-  const visivel = comItem(layout, id, (i) => ({ ...i, visivel: true }));
+  const visivel = comItem(layout, id, (itemLayout) => ({ ...itemLayout, visivel: true }));
   return { ...layout, itens: acomodar(visivel.itens, [id]) };
 }
 
@@ -232,7 +232,7 @@ export function mostrar(layout: Layout, id: string): Layout {
 export function semMoverArrastado(antes: Layout, depois: Layout, id: string): Layout {
   const origem = encontrar(antes, id);
   if (!origem) return depois;
-  return { ...depois, itens: depois.itens.map((i) => (i.id === id ? origem : i)) };
+  return { ...depois, itens: depois.itens.map((itemLayout) => (itemLayout.id === id ? origem : itemLayout)) };
 }
 
 // ---------- Blocos internos (KPIs): uma lista em ordem, larguras de 1 a 3 colunas internas.
@@ -242,7 +242,7 @@ export function alterarItemBloco(layout: Layout, bloco: string, id: string, muda
     ...layout,
     blocos: {
       ...layout.blocos,
-      [bloco]: (layout.blocos[bloco] ?? []).map((i) => (i.id === id ? { ...i, ...mudanca } : i)),
+      [bloco]: (layout.blocos[bloco] ?? []).map((itemLayout) => (itemLayout.id === id ? { ...itemLayout, ...mudanca } : itemLayout)),
     },
   };
 }
@@ -250,12 +250,12 @@ export function alterarItemBloco(layout: Layout, bloco: string, id: string, muda
 /** Nova ordem dos itens visíveis de um bloco; os ocultos ficam no fim. */
 export function ordenarBloco(layout: Layout, bloco: string, ids: string[]): Layout {
   const itens = layout.blocos[bloco] ?? [];
-  const porId = new Map(itens.map((i) => [i.id, i]));
+  const porId = new Map(itens.map((itemLayout) => [itemLayout.id, itemLayout]));
   return {
     ...layout,
     blocos: {
       ...layout.blocos,
-      [bloco]: [...ids.map((id) => porId.get(id)!).filter(Boolean), ...itens.filter((i) => !i.visivel)],
+      [bloco]: [...ids.map((id) => porId.get(id)!).filter(Boolean), ...itens.filter((itemLayout) => !itemLayout.visivel)],
     },
   };
 }
@@ -263,9 +263,9 @@ export function ordenarBloco(layout: Layout, bloco: string, ids: string[]): Layo
 /** Ids ocultos (cards da grade e itens de blocos). */
 export function ocultos(layout: Layout) {
   return {
-    cards: layout.itens.filter((i) => !i.visivel).map((i) => i.id),
+    cards: layout.itens.filter((itemLayout) => !itemLayout.visivel).map((itemLayout) => itemLayout.id),
     blocos: Object.fromEntries(
-      Object.entries(layout.blocos).map(([b, itens]) => [b, itens.filter((i) => !i.visivel).map((i) => i.id)]),
+      Object.entries(layout.blocos).map(([bloco, itens]) => [bloco, itens.filter((itemLayout) => !itemLayout.visivel).map((itemLayout) => itemLayout.id)]),
     ) as Record<string, string[]>,
   };
 }

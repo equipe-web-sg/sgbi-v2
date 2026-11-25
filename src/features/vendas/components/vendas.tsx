@@ -13,7 +13,7 @@ import { BlocoKpis } from "@/components/layout/bloco-kpis";
 import { GradePersonalizavel } from "@/components/layout/grade-personalizavel";
 import { useLayout } from "@/components/layout/use-layout";
 import { Spinner } from "@/components/ui/spinner";
-import { PERIODO_PADRAO } from "@/lib/config";
+import { periodoPadrao } from "@/lib/config";
 import { periodoComparacao } from "@/lib/date";
 import { formatData, formatMoeda, formatMoedaCompacta, formatPercentual } from "@/lib/format";
 import { evolucaoComparativa } from "@/lib/serie";
@@ -29,32 +29,32 @@ import { ProdutosLista } from "./produtos-lista";
 
 type FiltrosEstado = Omit<Filtros, "filiais"> & { filiais: number[] | null };
 
-const carregando = (q: { isPending: boolean; isPlaceholderData: boolean }) => q.isPending || q.isPlaceholderData;
+const carregando = (consulta: { isPending: boolean; isPlaceholderData: boolean }) => consulta.isPending || consulta.isPlaceholderData;
 
 /** Medidas da evolução: null quando nenhum dia do intervalo tem venda carregada. */
 const vendaDe = (dias: DiaVendas[]) => {
-  const i = indicadores(dias);
-  return i.cobertura.venda ? i.venda : null;
+  const indicadoresVendas = indicadores(dias);
+  return indicadoresVendas.cobertura.venda ? indicadoresVendas.venda : null;
 };
 const margemDe = (dias: DiaVendas[]) => {
-  const i = indicadores(dias);
-  return i.cobertura.venda ? i.margem : null;
+  const indicadoresVendas = indicadores(dias);
+  return indicadoresVendas.cobertura.venda ? indicadoresVendas.margem : null;
 };
 
 export function Vendas() {
   const filiaisQuery = useQuery(vendasQueries.filiais());
-  const [estado, setEstado] = useState<FiltrosEstado>({
-    periodo: PERIODO_PADRAO,
+  const [estado, setEstado] = useState<FiltrosEstado>(() => ({
+    periodo: periodoPadrao(),
     comparacao: { tipo: "periodo-anterior" },
     // null = todas as filiais com movimento (resolvido quando a lista chega).
     filiais: null,
     origem: "todos",
-  });
+  }));
 
   const filtros: Filtros = useMemo(
     () => ({
       ...estado,
-      filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((f) => f.codigo) ?? [],
+      filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((filial) => filial.codigo) ?? [],
     }),
     [estado, filiaisQuery.data],
   );
@@ -81,12 +81,12 @@ export function Vendas() {
 
   const totalCupons = useMemo(() => {
     if (cuponsPendentes) return undefined;
-    const a = indicadores(resumo.atual.dias);
-    const b = indicadores(resumo.anterior.dias);
-    return { cupons: a.cupons, itens: a.itens, cuponsAnterior: b.cupons, itensAnterior: b.itens };
+    const indicadoresAtuais = indicadores(resumo.atual.dias);
+    const indicadoresAnteriores = indicadores(resumo.anterior.dias);
+    return { cupons: indicadoresAtuais.cupons, itens: indicadoresAtuais.itens, cuponsAnterior: indicadoresAnteriores.cupons, itensAnterior: indicadoresAnteriores.itens };
   }, [resumo, cuponsPendentes]);
 
-  const erro = [filiaisQuery, vendas, cupons, departamentos, produtos].find((q) => q.isError);
+  const erro = [filiaisQuery, vendas, cupons, departamentos, produtos].find((consulta) => consulta.isError);
 
   // Dias sem carga distorcem a comparação: avisa em vez de esconder.
   const lacunas = useMemo(() => {
@@ -150,7 +150,7 @@ export function Vendas() {
           {filiaisQuery.data ? (
             <FiltrosBar
               filtros={filtros}
-              onChange={(f) => setEstado(f)}
+              onChange={(novosFiltros) => setEstado(novosFiltros)}
               filiais={filiaisQuery.data.filiais}
               dataMinima={filiaisQuery.data.dataMinima}
               dataMaxima={filiaisQuery.data.dataMaxima}
@@ -165,7 +165,7 @@ export function Vendas() {
             grade={grade}
             rotulos={ROTULOS}
             rotulosBlocos={{
-              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((k) => [k.id, k.titulo])) },
+              kpis: { titulo: "Indicadores", itens: Object.fromEntries(kpis.map((itemDoBloco) => [itemDoBloco.id, itemDoBloco.titulo])) },
             }}
           />
         </div>
@@ -185,7 +185,7 @@ export function Vendas() {
               cor="var(--chart-1)"
               formatValor={formatMoeda}
               formatEixo={formatMoedaCompacta}
-              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, vendaDe)}
+              pontos={(granularidade) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, granularidade, vendaDe)}
               carregando={vendasPendentes}
               alturaGrafico="min-h-0 flex-1"
             />
@@ -199,10 +199,10 @@ export function Vendas() {
               nomeAtual="Margem atual"
               cor="var(--chart-5)"
               formatValor={formatPercentual}
-              formatEixo={(v) => `${Math.round(v)}%`}
+              formatEixo={(valor) => `${Math.round(valor)}%`}
               larguraEixo={44}
               eixoDesdeZero
-              pontos={(g) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, g, margemDe)}
+              pontos={(granularidade) => evolucaoComparativa(resumo.atual.dias, resumo.anterior.dias, granularidade, margemDe)}
               carregando={vendasPendentes}
               alturaGrafico="min-h-0 flex-1"
             />

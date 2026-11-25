@@ -32,9 +32,9 @@ const { A, B } = VENDAS_CONFIG.abc;
 function faixasPorClasse(curva: Curva | undefined) {
   if (!curva?.totalProdutos) return [];
   let inicio = 0;
-  return curva.classes.map((c) => {
-    const fim = inicio + (c.produtos / curva.totalProdutos) * 100;
-    const faixa = { classe: c.classe, x1: inicio, x2: fim };
+  return curva.classes.map((resumoClasse) => {
+    const fim = inicio + (resumoClasse.produtos / curva.totalProdutos) * 100;
+    const faixa = { classe: resumoClasse.classe, x1: inicio, x2: fim };
     inicio = fim;
     return faixa;
   });
@@ -57,12 +57,12 @@ function CurvaPlot({
     <ResponsiveContainer width="100%" height="100%" debounce={DEBOUNCE_GRAFICO}>
       <AreaChart data={curva.curva} margin={{ top: 6, right: 10, bottom: 0, left: 0 }}>
         <CartesianGrid {...propsGrade(detalhado)} />
-        {faixasX.map((f) => (
+        {faixasX.map((faixa) => (
           <ReferenceArea
-            key={f.classe}
-            x1={f.x1}
-            x2={f.x2}
-            fill={CLASSES[f.classe].cor}
+            key={faixa.classe}
+            x1={faixa.x1}
+            x2={faixa.x2}
+            fill={CLASSES[faixa.classe].cor}
             fillOpacity={0.1}
             ifOverflow="hidden"
           />
@@ -72,24 +72,24 @@ function CurvaPlot({
           type="number"
           domain={[0, 100]}
           ticks={detalhado ? [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] : [0, 20, 40, 60, 80, 100]}
-          tickFormatter={(v: number) => `${v}%`}
+          tickFormatter={(valor: number) => `${valor}%`}
           {...propsEixoX(detalhado)}
         />
         <YAxis
           domain={[0, 100]}
           ticks={detalhado ? [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] : [0, 25, 50, 75, 100]}
-          tickFormatter={(v: number) => `${v}%`}
+          tickFormatter={(valor: number) => `${valor}%`}
           {...propsEixoY(detalhado)}
           width={40}
         />
         <Tooltip
           content={({ active, payload }) => {
-            const p = payload?.[0]?.payload as { produtos: number; acumulado: number } | undefined;
-            if (!active || !p) return null;
+            const ponto = payload?.[0]?.payload as { produtos: number; acumulado: number } | undefined;
+            if (!active || !ponto) return null;
             return (
               <div className="rounded-lg border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg">
-                <span className="font-semibold tabular-nums">{formatPercentual(p.produtos)}</span> dos produtos ={" "}
-                <span className="font-semibold tabular-nums">{formatPercentual(p.acumulado)}</span> {base}
+                <span className="font-semibold tabular-nums">{formatPercentual(ponto.produtos)}</span> dos produtos ={" "}
+                <span className="font-semibold tabular-nums">{formatPercentual(ponto.acumulado)}</span> {base}
               </div>
             );
           }}
@@ -115,9 +115,9 @@ export function CurvaAbc({ abc, carregando }: { abc: Record<CriterioAbc, Curva> 
   const base = criterio === "faturamento" ? "das vendas" : "do lucro";
 
   const titulo = `Curva ABC (${criterio === "faturamento" ? "Faturamento" : "Rentabilidade"})`;
-  const legenda: ItemLegenda[] = (curva?.classes ?? []).map((c) => ({
-    nome: `Classe ${c.classe}: ${formatInteiro(c.produtos)} produtos, ${formatPercentual(c.participacao)} ${base}`,
-    cor: CLASSES[c.classe].cor,
+  const legenda: ItemLegenda[] = (curva?.classes ?? []).map((resumoClasse) => ({
+    nome: `Classe ${resumoClasse.classe}: ${formatInteiro(resumoClasse.produtos)} produtos, ${formatPercentual(resumoClasse.participacao)} ${base}`,
+    cor: CLASSES[resumoClasse.classe].cor,
   }));
 
   const seletor = (
@@ -149,26 +149,26 @@ export function CurvaAbc({ abc, carregando }: { abc: Record<CriterioAbc, Curva> 
           {(
             curva?.classes ??
             (["A", "B", "C"] as const).map((classe) => ({ classe, produtos: 0, participacao: 0, valor: 0 }))
-          ).map((c) => (
-            <div key={c.classe} className="min-w-0 rounded-xl border px-2 py-1">
+          ).map((resumoClasse) => (
+            <div key={resumoClasse.classe} className="min-w-0 rounded-xl border px-2 py-1">
               <div className="flex items-center gap-1.5">
                 <span
-                  className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${CLASSES[c.classe].badge}`}
+                  className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${CLASSES[resumoClasse.classe].badge}`}
                 >
-                  {c.classe}
+                  {resumoClasse.classe}
                 </span>
                 <span className="truncate text-sm font-bold tabular-nums">
-                  {formatInteiro(c.produtos)}{" "}
+                  {formatInteiro(resumoClasse.produtos)}{" "}
                   <span className="text-xs font-normal text-muted-foreground">produtos</span>
                 </span>
               </div>
               <div
                 className="truncate text-[11px] tabular-nums"
-                title={`${formatPercentual(c.participacao)} ${base} · ${formatMoeda(c.valor)}`}
+                title={`${formatPercentual(resumoClasse.participacao)} ${base} · ${formatMoeda(resumoClasse.valor)}`}
               >
-                <span className={`font-semibold ${CLASSES[c.classe].texto}`}>{formatPercentual(c.participacao)}</span>
+                <span className={`font-semibold ${CLASSES[resumoClasse.classe].texto}`}>{formatPercentual(resumoClasse.participacao)}</span>
                 <span className="text-muted-foreground"> · </span>
-                <span className="font-semibold">{formatMoeda(c.valor)}</span>
+                <span className="font-semibold">{formatMoeda(resumoClasse.valor)}</span>
               </div>
             </div>
           ))}

@@ -25,6 +25,6 @@ export function acessoDoUsuario(usuario: Usuario): Acesso {
 export async function exigirAcesso(tela: Tela, fontes: readonly Fonte[]) {
   const usuario = await usuarioAtual();
   if (!usuario) throw new AcessoNegado("Sessão expirada. Entre novamente.");
-  const b = bloqueio(acessoDoUsuario(usuario), tela, fontes);
-  if (b) throw new AcessoNegado(detalheDoBloqueio(b));
+  const bloqueado = bloqueio(acessoDoUsuario(usuario), tela, fontes);
+  if (bloqueado) throw new AcessoNegado(detalheDoBloqueio(bloqueado));
 }

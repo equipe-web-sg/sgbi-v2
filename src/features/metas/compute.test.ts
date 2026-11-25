@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { curvaCumprimento, projecao, resumirMeta, somaRealizado, statusMargem, statusMeta } from "./compute";
 
-const P = (inicio: string, fim: string) => ({ inicio, fim });
+const periodoDe = (inicio: string, fim: string) => ({ inicio, fim });
 
 describe("somaRealizado", () => {
   const dias = [
@@ -11,16 +11,16 @@ describe("somaRealizado", () => {
   ];
 
   it("soma venda e custo só dos dias dentro do período (pontas inclusas)", () => {
-    expect(somaRealizado(dias, P("2026-11-01", "2026-11-02"))).toEqual({ venda: 300, custo: 180 });
+    expect(somaRealizado(dias, periodoDe("2026-11-01", "2026-11-02"))).toEqual({ venda: 300, custo: 180 });
   });
 
   it("null quando não há nenhum dia com carga no período ou o período é null", () => {
-    expect(somaRealizado(dias, P("2026-12-01", "2026-12-05"))).toBeNull();
+    expect(somaRealizado(dias, periodoDe("2026-12-01", "2026-12-05"))).toBeNull();
     expect(somaRealizado(dias, null)).toBeNull();
   });
 
   it("dia com venda zero conta como carga (não é null)", () => {
-    expect(somaRealizado([{ data: "2026-11-01", venda: 0, custo: 0 }], P("2026-11-01", "2026-11-01"))).toEqual({
+    expect(somaRealizado([{ data: "2026-11-01", venda: 0, custo: 0 }], periodoDe("2026-11-01", "2026-11-01"))).toEqual({
       venda: 0,
       custo: 0,
     });
@@ -28,7 +28,7 @@ describe("somaRealizado", () => {
 });
 
 describe("statusMeta (acima ≥ 100% do ritmo, no ritmo ≥ 95%)", () => {
-  const decorrido = P("2026-11-01", "2026-11-10");
+  const decorrido = periodoDe("2026-11-01", "2026-11-10");
 
   it.each([
     [100, "acima"],
@@ -53,8 +53,8 @@ describe("statusMeta (acima ≥ 100% do ritmo, no ritmo ≥ 95%)", () => {
 });
 
 describe("projecao", () => {
-  const periodo = P("2026-11-01", "2026-11-30");
-  const decorrido = P("2026-11-01", "2026-11-10");
+  const periodo = periodoDe("2026-11-01", "2026-11-30");
+  const decorrido = periodoDe("2026-11-01", "2026-11-10");
 
   it("com meta, mantém o ritmo sobre a curva da meta", () => {
     // Realizou 90 de 100 esperados; meta do mês 300 → projeta 270.
@@ -94,11 +94,11 @@ describe("statusMargem (ok até 0,5 p.p. abaixo da meta, atenção até 2 p.p.)"
 });
 
 describe("resumirMeta", () => {
-  const periodo = P("2026-11-01", "2026-11-30");
-  const decorrido = P("2026-11-01", "2026-11-10");
+  const periodo = periodoDe("2026-11-01", "2026-11-30");
+  const decorrido = periodoDe("2026-11-01", "2026-11-10");
 
   it("calcula atingimento, diferença, projeção, margem e status", () => {
-    const r = resumirMeta({
+    const resultado = resumirMeta({
       meta: { meta: 1000, metaLucro: 300 },
       metaEsperada: 400,
       venda: 400,
@@ -106,36 +106,36 @@ describe("resumirMeta", () => {
       periodo,
       decorrido,
     });
-    expect(r.atingimento).toBe(40);
-    expect(r.diferenca).toBe(-600);
-    expect(r.projecao).toBeCloseTo(1000);
-    expect(r.projecaoSobreMeta).toBeCloseTo(100);
-    expect(r.status).toBe("acima");
-    expect(r.margem).toBe(25);
-    expect(r.metaMargem).toBe(30);
-    expect(r.diferencaMargem).toBe(-5);
-    expect(r.statusMargem).toBe("critico");
+    expect(resultado.atingimento).toBe(40);
+    expect(resultado.diferenca).toBe(-600);
+    expect(resultado.projecao).toBeCloseTo(1000);
+    expect(resultado.projecaoSobreMeta).toBeCloseTo(100);
+    expect(resultado.status).toBe("acima");
+    expect(resultado.margem).toBe(25);
+    expect(resultado.metaMargem).toBe(30);
+    expect(resultado.diferencaMargem).toBe(-5);
+    expect(resultado.statusMargem).toBe("critico");
   });
 
   it("sem meta cadastrada: atingimento, diferença e margem da meta ficam null", () => {
-    const r = resumirMeta({ meta: null, metaEsperada: null, venda: 100, custo: 50, periodo, decorrido });
-    expect(r.meta).toBeNull();
-    expect(r.atingimento).toBeNull();
-    expect(r.diferenca).toBeNull();
-    expect(r.projecaoSobreMeta).toBeNull();
-    expect(r.status).toBe("sem-meta");
-    expect(r.statusMargem).toBe("sem-meta");
-    expect(r.projecao).toBeCloseTo(300); // média diária
+    const resultado = resumirMeta({ meta: null, metaEsperada: null, venda: 100, custo: 50, periodo, decorrido });
+    expect(resultado.meta).toBeNull();
+    expect(resultado.atingimento).toBeNull();
+    expect(resultado.diferenca).toBeNull();
+    expect(resultado.projecaoSobreMeta).toBeNull();
+    expect(resultado.status).toBe("sem-meta");
+    expect(resultado.statusMargem).toBe("sem-meta");
+    expect(resultado.projecao).toBeCloseTo(300); // média diária
   });
 
   it("meta com valor zero é tratada como sem meta", () => {
-    const r = resumirMeta({ meta: { meta: 0, metaLucro: 0 }, metaEsperada: 0, venda: 10, custo: 5, periodo, decorrido });
-    expect(r.meta).toBeNull();
-    expect(r.atingimento).toBeNull();
+    const resultado = resumirMeta({ meta: { meta: 0, metaLucro: 0 }, metaEsperada: 0, venda: 10, custo: 5, periodo, decorrido });
+    expect(resultado.meta).toBeNull();
+    expect(resultado.atingimento).toBeNull();
   });
 
   it("período que não começou: sem projeção e sem margem, status aguardando", () => {
-    const r = resumirMeta({
+    const resultado = resumirMeta({
       meta: { meta: 1000, metaLucro: 300 },
       metaEsperada: null,
       venda: 0,
@@ -143,15 +143,15 @@ describe("resumirMeta", () => {
       periodo,
       decorrido: null,
     });
-    expect(r.status).toBe("aguardando");
-    expect(r.projecao).toBeNull();
-    expect(r.margem).toBeNull();
+    expect(resultado.status).toBe("aguardando");
+    expect(resultado.projecao).toBeNull();
+    expect(resultado.margem).toBeNull();
   });
 });
 
 describe("curvaCumprimento", () => {
-  const mes = P("2026-11-01", "2026-11-05");
-  const metas = ["01", "02", "03", "04", "05"].map((d) => ({ data: `2026-11-${d}`, meta: 100, metaLucro: 30 }));
+  const mes = periodoDe("2026-11-01", "2026-11-05");
+  const metas = ["01", "02", "03", "04", "05"].map((dia) => ({ data: `2026-11-${dia}`, meta: 100, metaLucro: 30 }));
   const realizados = [
     { data: "2026-11-01", venda: 100, custo: 70 },
     { data: "2026-11-02", venda: 50, custo: 35 },
@@ -159,32 +159,32 @@ describe("curvaCumprimento", () => {
   ];
 
   it("meta acumulada no mês inteiro; realizado acumulado só até a referência", () => {
-    const c = curvaCumprimento(mes, "2026-11-02", metas, realizados);
-    expect(c.map((p) => p.meta)).toEqual([100, 200, 300, 400, 500]);
-    expect(c.map((p) => p.realizado)).toEqual([100, 150, null, null, null]);
+    const curva = curvaCumprimento(mes, "2026-11-02", metas, realizados);
+    expect(curva.map((pontoCumprimento) => pontoCumprimento.meta)).toEqual([100, 200, 300, 400, 500]);
+    expect(curva.map((pontoCumprimento) => pontoCumprimento.realizado)).toEqual([100, 150, null, null, null]);
   });
 
   it("projeção começa na referência (sem buraco) e segue o ritmo da meta", () => {
-    const c = curvaCumprimento(mes, "2026-11-02", metas, realizados);
+    const curva = curvaCumprimento(mes, "2026-11-02", metas, realizados);
     // Ritmo: 150 realizados de 200 esperados = 75%.
-    expect(c.map((p) => p.projecao)).toEqual([null, 150, 225, 300, 375]);
+    expect(curva.map((pontoCumprimento) => pontoCumprimento.projecao)).toEqual([null, 150, 225, 300, 375]);
   });
 
   it("sem meta, a meta fica null e a projeção usa a média diária", () => {
-    const c = curvaCumprimento(mes, "2026-11-02", [], realizados);
-    expect(c.every((p) => p.meta === null)).toBe(true);
+    const curva = curvaCumprimento(mes, "2026-11-02", [], realizados);
+    expect(curva.every((pontoCumprimento) => pontoCumprimento.meta === null)).toBe(true);
     // Média: 150 em 2 dias = 75/dia.
-    expect(c.map((p) => p.projecao)).toEqual([null, 150, 225, 300, 375]);
+    expect(curva.map((pontoCumprimento) => pontoCumprimento.projecao)).toEqual([null, 150, 225, 300, 375]);
   });
 
   it("referência antes do mês: sem realizado e sem projeção", () => {
-    const c = curvaCumprimento(mes, "2026-10-31", metas, realizados);
-    expect(c.every((p) => p.realizado === null && p.projecao === null)).toBe(true);
-    expect(c[4].meta).toBe(500);
+    const curva = curvaCumprimento(mes, "2026-10-31", metas, realizados);
+    expect(curva.every((pontoCumprimento) => pontoCumprimento.realizado === null && pontoCumprimento.projecao === null)).toBe(true);
+    expect(curva[4].meta).toBe(500);
   });
 
   it("referência no último dia: projeção termina igual ao realizado", () => {
-    const c = curvaCumprimento(mes, "2026-11-05", metas, realizados);
-    expect(c[4].projecao).toBe(c[4].realizado);
+    const curva = curvaCumprimento(mes, "2026-11-05", metas, realizados);
+    expect(curva[4].projecao).toBe(curva[4].realizado);
   });
 });

@@ -14,8 +14,8 @@ export type AtalhoIntervalo<Id extends string = string> = { id: Id; label: strin
 
 // O calendário trabalha com Date local; o resto do app com ISO.
 function isoParaDate(iso: string) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  const [ano, mes, dia] = iso.split("-").map(Number);
+  return new Date(ano, mes - 1, dia);
 }
 
 function dateParaIso(date: Date) {
@@ -29,9 +29,9 @@ const HOVER_PONTA = "[&>button]:hover:bg-[color-mix(in_oklab,var(--primary),blac
 const MAX_DIAS = 366;
 
 const br = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
-const dias = (i: IntervaloIso) =>
-  Math.round((isoParaDate(i.fim).getTime() - isoParaDate(i.inicio).getTime()) / 86_400_000) + 1;
-const igual = (a?: IntervaloIso | null, b?: IntervaloIso | null) => !!a && !!b && a.inicio === b.inicio && a.fim === b.fim;
+const dias = (intervaloIso: IntervaloIso) =>
+  Math.round((isoParaDate(intervaloIso.fim).getTime() - isoParaDate(intervaloIso.inicio).getTime()) / 86_400_000) + 1;
+const igual = (primeiro?: IntervaloIso | null, segundo?: IntervaloIso | null) => !!primeiro && !!segundo && primeiro.inicio === segundo.inicio && primeiro.fim === segundo.fim;
 
 /**
  * Filtro de intervalo de datas: atalhos à esquerda (só preenchem o calendário)
@@ -77,7 +77,7 @@ export function DateRangePicker<Id extends string>({
   const [diaSobMouse, setDiaSobMouse] = useState<Date | null>(null);
 
   const rotuloAplicado =
-    atalhos.find((a) => a.id === atalhoAplicado)?.label ?? atalhos.find((a) => igual(a.intervalo, value))?.label;
+    atalhos.find((atalho) => atalho.id === atalhoAplicado)?.label ?? atalhos.find((atalho) => igual(atalho.intervalo, value))?.label;
 
   const abrir = (open: boolean) => {
     if (open) {
@@ -91,8 +91,8 @@ export function DateRangePicker<Id extends string>({
 
   const rascunhoIso =
     rascunho?.from && rascunho.to ? { inicio: dateParaIso(rascunho.from), fim: dateParaIso(rascunho.to) } : null;
-  const atalhoAtivo = atalhos.find((a) => a.id === atalhoRascunho && igual(a.intervalo, rascunhoIso)) ??
-    atalhos.find((a) => igual(a.intervalo, rascunhoIso));
+  const atalhoAtivo = atalhos.find((atalho) => atalho.id === atalhoRascunho && igual(atalho.intervalo, rascunhoIso)) ??
+    atalhos.find((atalho) => igual(atalho.intervalo, rascunhoIso));
 
   const clicarDia = (dia: Date) => {
     setAtalhoRascunho(null);
@@ -156,17 +156,17 @@ export function DateRangePicker<Id extends string>({
 
       <PopoverContent className="flex flex-col sm:flex-row">
         <ul className="flex shrink-0 gap-1 overflow-x-auto border-b p-2 sm:w-48 sm:flex-col sm:border-b-0 sm:border-r">
-          {atalhos.map((a) => (
-            <li key={a.id}>
+          {atalhos.map((atalho) => (
+            <li key={atalho.id}>
               <button
                 type="button"
-                onClick={() => escolherAtalho(a)}
-                aria-pressed={a.id === atalhoAtivo?.id}
+                onClick={() => escolherAtalho(atalho)}
+                aria-pressed={atalho.id === atalhoAtivo?.id}
                 className={`w-full whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-secondary ${
-                  a.id === atalhoAtivo?.id ? "bg-secondary font-medium text-primary" : ""
+                  atalho.id === atalhoAtivo?.id ? "bg-secondary font-medium text-primary" : ""
                 }`}
               >
-                {a.label}
+                {atalho.label}
               </button>
             </li>
           ))}

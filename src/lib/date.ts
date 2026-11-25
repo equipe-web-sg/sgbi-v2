@@ -3,8 +3,8 @@ import type { AtalhoComparacao, Comparacao, Periodo } from "./filtros";
 // Datas ISO (YYYY-MM-DD) manipuladas em UTC para não depender do fuso.
 
 export function parseIso(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
+  const [ano, mes, dia] = iso.split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1, dia));
 }
 
 export function toIso(date: Date): string {
@@ -12,9 +12,9 @@ export function toIso(date: Date): string {
 }
 
 export function addDays(iso: string, days: number): string {
-  const d = parseIso(iso);
-  d.setUTCDate(d.getUTCDate() + days);
-  return toIso(d);
+  const dia = parseIso(iso);
+  dia.setUTCDate(dia.getUTCDate() + days);
+  return toIso(dia);
 }
 
 export function daysBetween(inicio: string, fim: string): number {
@@ -22,8 +22,8 @@ export function daysBetween(inicio: string, fim: string): number {
 }
 
 export function daysInMonth(iso: string): number {
-  const d = parseIso(iso);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  const dia = parseIso(iso);
+  return new Date(Date.UTC(dia.getUTCFullYear(), dia.getUTCMonth() + 1, 0)).getUTCDate();
 }
 
 export function firstDayOfMonth(iso: string): string {
@@ -34,10 +34,16 @@ export function lastDayOfMonth(iso: string): string {
   return `${iso.slice(0, 7)}-${String(daysInMonth(iso)).padStart(2, "0")}`;
 }
 
+/** Mês inteiro (do dia 1 ao último) da data `hoje`, pelo relógio local de quem a informa. */
+export function periodoDoMes(hoje: Date): Periodo {
+  const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-01`;
+  return { inicio, fim: lastDayOfMonth(inicio) };
+}
+
 /** Todos os dias de `inicio` a `fim`, inclusive. */
 export function eachDay({ inicio, fim }: Periodo): string[] {
   const days: string[] = [];
-  for (let d = inicio; d <= fim; d = addDays(d, 1)) days.push(d);
+  for (let dia = inicio; dia <= fim; dia = addDays(dia, 1)) days.push(dia);
   return days;
 }
 
@@ -46,17 +52,17 @@ function isFullMonths({ inicio, fim }: Periodo) {
 }
 
 function shiftMonths(iso: string, months: number, edge: "start" | "end") {
-  const d = parseIso(iso);
-  const shifted = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, 1));
+  const dia = parseIso(iso);
+  const shifted = new Date(Date.UTC(dia.getUTCFullYear(), dia.getUTCMonth() + months, 1));
   const first = toIso(shifted);
   return edge === "start" ? first : lastDayOfMonth(first);
 }
 
 /** Mesma data `months` meses antes (dia limitado ao fim do mês: 31/03 → 28/02). */
 function shiftDateMonths(iso: string, months: number) {
-  const d = parseIso(iso);
-  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, 1));
-  target.setUTCDate(Math.min(d.getUTCDate(), daysInMonth(toIso(target))));
+  const dia = parseIso(iso);
+  const target = new Date(Date.UTC(dia.getUTCFullYear(), dia.getUTCMonth() + months, 1));
+  target.setUTCDate(Math.min(dia.getUTCDate(), daysInMonth(toIso(target))));
   return toIso(target);
 }
 
@@ -119,12 +125,12 @@ export function startOfWeek(iso: string): string {
 }
 
 /** Meses (YYYY-MM) que o período cobre. */
-export function mesesDoPeriodo(p: Periodo): string[] {
+export function mesesDoPeriodo(periodo: Periodo): string[] {
   const meses: string[] = [];
-  for (let mes = p.inicio.slice(0, 7); mes <= p.fim.slice(0, 7); ) {
+  for (let mes = periodo.inicio.slice(0, 7); mes <= periodo.fim.slice(0, 7); ) {
     meses.push(mes);
-    const [a, m] = mes.split("-").map(Number);
-    mes = m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, "0")}`;
+    const [ano, numeroMes] = mes.split("-").map(Number);
+    mes = numeroMes === 12 ? `${ano + 1}-01` : `${ano}-${String(numeroMes + 1).padStart(2, "0")}`;
   }
   return meses;
 }

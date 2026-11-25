@@ -28,7 +28,7 @@ export function filtrosParams(filtros: Filtros) {
     // O servidor recebe a comparação já resolvida em datas.
     comparacaoInicio: comparacao.inicio,
     comparacaoFim: comparacao.fim,
-    filiais: [...filtros.filiais].sort((a, b) => a - b).join(","),
+    filiais: [...filtros.filiais].sort((primeiro, segundo) => primeiro - segundo).join(","),
     origem: filtros.origem,
   };
 }

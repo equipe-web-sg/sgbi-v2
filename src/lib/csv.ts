@@ -13,7 +13,7 @@ function celula(valor: Celula): string {
 
 /** Gera o CSV e dispara o download no navegador. */
 export function baixarCsv(nomeArquivo: string, cabecalho: string[], linhas: Celula[][]) {
-  const conteudo = [cabecalho, ...linhas].map((l) => l.map(celula).join(";")).join("\r\n");
+  const conteudo = [cabecalho, ...linhas].map((linha) => linha.map(celula).join(";")).join("\r\n");
   const url = URL.createObjectURL(new Blob(["﻿", conteudo], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
   link.href = url;

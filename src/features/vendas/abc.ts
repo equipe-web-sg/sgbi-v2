@@ -29,9 +29,9 @@ export function curvaAbc(
   criterio: CriterioAbc,
   faixas: { A: number; B: number } = VENDAS_CONFIG.abc,
 ): { curva: CurvaAbc; classePorCodigo: Map<number, ClasseAbc> } {
-  const valorDe = (p: ProdutoVenda) => (criterio === "faturamento" ? p.venda : p.venda - p.custo);
-  const ordenados = [...produtos].sort((a, b) => valorDe(b) - valorDe(a));
-  const total = ordenados.reduce((t, p) => t + valorDe(p), 0);
+  const valorDe = (produtoVenda: ProdutoVenda) => (criterio === "faturamento" ? produtoVenda.venda : produtoVenda.venda - produtoVenda.custo);
+  const ordenados = [...produtos].sort((primeiro, segundo) => valorDe(segundo) - valorDe(primeiro));
+  const total = ordenados.reduce((soma, ordenado) => soma + valorDe(ordenado), 0);
 
   const classePorCodigo = new Map<number, ClasseAbc>();
   const resumo: Record<ClasseAbc, { produtos: number; valor: number }> = {
@@ -43,18 +43,18 @@ export function curvaAbc(
   const passo = Math.max(1, Math.floor(ordenados.length / PONTOS_CURVA));
 
   let acumulado = 0;
-  ordenados.forEach((p, i) => {
-    const valor = valorDe(p);
+  ordenados.forEach((produtoVenda, indice) => {
+    const valor = valorDe(produtoVenda);
     const percentualAntes = total > 0 ? (acumulado / total) * 100 : 100;
     const classe: ClasseAbc =
       valor <= 0 ? "C" : percentualAntes < faixas.A ? "A" : percentualAntes < faixas.A + faixas.B ? "B" : "C";
-    classePorCodigo.set(p.codigo, classe);
+    classePorCodigo.set(produtoVenda.codigo, classe);
     resumo[classe].produtos++;
     resumo[classe].valor += valor;
     acumulado += valor;
-    if ((i + 1) % passo === 0 || i === ordenados.length - 1) {
+    if ((indice + 1) % passo === 0 || indice === ordenados.length - 1) {
       curva.push({
-        produtos: ((i + 1) / ordenados.length) * 100,
+        produtos: ((indice + 1) / ordenados.length) * 100,
         acumulado: total > 0 ? Math.min(100, Math.max(0, (acumulado / total) * 100)) : 0,
       });
     }
@@ -86,42 +86,42 @@ export function montarProdutos(
   tamanho: number = VENDAS_CONFIG.tamanhoLista,
 ): ProdutosResponse {
   // Só produtos com venda no período (devoluções puras não entram na curva).
-  const comVenda = produtos.filter((p) => p.venda > 0);
+  const comVenda = produtos.filter((produtoVenda) => produtoVenda.venda > 0);
   const faturamento = curvaAbc(comVenda, "faturamento");
   const rentabilidade = curvaAbc(comVenda, "rentabilidade");
 
-  const resumos: ProdutoResumo[] = comVenda.map((p) => {
-    const anterior = vendaAnterior.get(p.codigo) ?? 0;
-    const lucro = p.venda - p.custo;
+  const resumos: ProdutoResumo[] = comVenda.map((produtoVenda) => {
+    const anterior = vendaAnterior.get(produtoVenda.codigo) ?? 0;
+    const lucro = produtoVenda.venda - produtoVenda.custo;
     return {
-      codigo: p.codigo,
-      descricao: p.descricao,
-      departamento: p.departamento,
-      classe: faturamento.classePorCodigo.get(p.codigo)!,
-      venda: p.venda,
+      codigo: produtoVenda.codigo,
+      descricao: produtoVenda.descricao,
+      departamento: produtoVenda.departamento,
+      classe: faturamento.classePorCodigo.get(produtoVenda.codigo)!,
+      venda: produtoVenda.venda,
       vendaAnterior: anterior,
-      variacao: anterior > 0 ? ((p.venda - anterior) / anterior) * 100 : null,
+      variacao: anterior > 0 ? ((produtoVenda.venda - anterior) / anterior) * 100 : null,
       lucro,
-      margem: (lucro / p.venda) * 100,
+      margem: (lucro / produtoVenda.venda) * 100,
     };
   });
 
-  const classeA = resumos.filter((p) => p.classe === "A");
-  const classeAB = resumos.filter((p) => p.classe !== "C");
-  const primeiros = (lista: ProdutoResumo[], ordem: (a: ProdutoResumo, b: ProdutoResumo) => number) =>
+  const classeA = resumos.filter((produtoResumo) => produtoResumo.classe === "A");
+  const classeAB = resumos.filter((produtoResumo) => produtoResumo.classe !== "C");
+  const primeiros = (lista: ProdutoResumo[], ordem: (primeiro: ProdutoResumo, segundo: ProdutoResumo) => number) =>
     lista.sort(ordem).slice(0, tamanho);
 
   const listas: Record<ListaProdutos, ProdutoResumo[]> = {
     queda: primeiros(
-      classeA.filter((p) => p.variacao != null && p.variacao < 0),
-      (a, b) => a.variacao! - b.variacao!,
+      classeA.filter((produtoResumo) => produtoResumo.variacao != null && produtoResumo.variacao < 0),
+      (anterior, proximo) => anterior.variacao! - proximo.variacao!,
     ),
     crescimento: primeiros(
-      classeA.filter((p) => p.variacao != null && p.variacao > 0),
-      (a, b) => b.variacao! - a.variacao!,
+      classeA.filter((produtoResumo) => produtoResumo.variacao != null && produtoResumo.variacao > 0),
+      (anterior, proximo) => proximo.variacao! - anterior.variacao!,
     ),
-    "maior-margem": primeiros([...classeAB], (a, b) => b.margem! - a.margem!),
-    "menor-margem": primeiros([...classeAB], (a, b) => a.margem! - b.margem!),
+    "maior-margem": primeiros([...classeAB], (anterior, proximo) => proximo.margem! - anterior.margem!),
+    "menor-margem": primeiros([...classeAB], (anterior, proximo) => anterior.margem! - proximo.margem!),
   };
 
   return { abc: { faturamento: faturamento.curva, rentabilidade: rentabilidade.curva }, listas };

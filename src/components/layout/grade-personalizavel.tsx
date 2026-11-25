@@ -18,6 +18,7 @@ import {
   semMoverArrastado,
   trocar,
   type Borda,
+  type Caixa,
   type ItemLayout,
   type Layout,
 } from "@/lib/layout";
@@ -44,8 +45,8 @@ const BAIXO_PX = 230;
 /** Tempo (ms) em que o card recém-solto fica fora da animação de layout, enquanto desliza até o lugar. */
 const DURACAO_SOLTO = 800;
 
-/** Altura em px de `h` unidades (os espaços entre unidades contam, como numa grade). */
-export const alturaPx = (h: number, unidade: number) => h * unidade + (h - 1) * GAP;
+/** Altura em px de `altura` unidades (os espaços entre unidades contam, como numa grade). */
+export const alturaPx = (altura: number, unidade: number) => altura * unidade + (altura - 1) * GAP;
 
 /**
  * Altura da unidade de linha: o layout padrão (`totalPadrao` unidades) ocupa o
@@ -68,7 +69,7 @@ function useUnidade(ref: RefObject<HTMLElement | null>, totalPadrao: number) {
 
 /** Largura de uma coluna (px) da grade de 12 colunas. */
 function useColuna(ref: RefObject<HTMLElement | null>) {
-  const [coluna, setColuna] = useState(0);
+  const [larguraColuna, setColuna] = useState(0);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -76,26 +77,26 @@ function useColuna(ref: RefObject<HTMLElement | null>) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [ref]);
-  return coluna;
+  return larguraColuna;
 }
 
-const BORDAS: Borda[] = ["l", "r", "t", "b", "tl", "tr", "bl", "br"];
+const BORDAS: Borda[] = ["esquerda", "direita", "topo", "base", "topo-esquerda", "topo-direita", "base-esquerda", "base-direita"];
 const NOME_BORDA: Record<Borda, string> = {
-  l: "pela borda esquerda",
-  r: "pela borda direita",
-  t: "pela borda de cima",
-  b: "pela borda de baixo",
-  tl: "pelo canto superior esquerdo",
-  tr: "pelo canto superior direito",
-  bl: "pelo canto inferior esquerdo",
-  br: "pelo canto inferior direito",
+  esquerda: "pela borda esquerda",
+  direita: "pela borda direita",
+  topo: "pela borda de cima",
+  base: "pela borda de baixo",
+  "topo-esquerda": "pelo canto superior esquerdo",
+  "topo-direita": "pelo canto superior direito",
+  "base-esquerda": "pelo canto inferior esquerdo",
+  "base-direita": "pelo canto inferior direito",
 };
 
 /**
- * O que acontece ao soltar o card arrastado: ir para a célula (`x`, `y`) ou
+ * O que acontece ao soltar o card arrastado: ir para a célula (`coluna`, `linha`) ou
  * trocar de lugar com o card que está sob o ponteiro.
  */
-export type Previa = { tipo: "posicao"; id: string; x: number; y: number } | { tipo: "troca"; id: string; com: string };
+export type Previa = { tipo: "posicao"; id: string; coluna: number; linha: number } | { tipo: "troca"; id: string; com: string };
 
 /** Card que acabou de ser solto e a caixa (na tela) de onde ele parte. */
 type Solto = { id: string; de: DOMRect };
@@ -103,9 +104,9 @@ type Solto = { id: string; de: DOMRect };
 /** Tamanho ao vivo durante o redimensionamento: o card segue o ponteiro em px. */
 type AoVivo = { largura: number; altura: number; ancoraDireita: boolean; ancoraBaixo: boolean };
 
-const posicaoNaGrade = (i: { x: number; y: number; w: number; h: number }) => ({
-  gridColumn: `${i.x + 1} / span ${i.w}`,
-  gridRow: `${i.y + 1} / span ${i.h}`,
+const posicaoNaGrade = (item: Caixa) => ({
+  gridColumn: `${item.coluna + 1} / span ${item.largura}`,
+  gridRow: `${item.linha + 1} / span ${item.altura}`,
 });
 
 function CardDaGrade({
@@ -113,7 +114,7 @@ function CardDaGrade({
   grade,
   rotulo,
   unidade,
-  coluna,
+  larguraColuna,
   bloco,
   solto,
   children,
@@ -122,7 +123,7 @@ function CardDaGrade({
   grade: LayoutTela;
   rotulo: string;
   unidade: number;
-  coluna: number;
+  larguraColuna: number;
   /** Card com itens editáveis dentro (ex.: KPIs): o conteúdo continua interativo na edição. */
   bloco: boolean;
   solto: Solto | null;
@@ -132,7 +133,7 @@ function CardDaGrade({
   const travar = editando && !bloco;
   const { ref, handleRef, isDragging } = useDraggable({ id: item.id, type: "card", disabled: !editando });
   const elRef = useRef<HTMLDivElement | null>(null);
-  const inicio = useRef<{ x: number; y: number; w: number; h: number; ret: { width: number; height: number } } | null>(null);
+  const inicio = useRef<{ coluna: number; linha: number; largura: number; altura: number; ret: { width: number; height: number } } | null>(null);
   const [aoVivo, setAoVivo] = useState<AoVivo | null>(null);
   // Deslocamento encaixado (colunas e linhas) do redimensionamento em andamento, aplicado ao soltar.
   const alvo = useRef<{ colunas: number; linhas: number } | null>(null);
@@ -144,24 +145,24 @@ function CardDaGrade({
     if (!acabouDeCair || !el || !solto) return;
     // Destino calculado pela grade: o dnd-kit só devolve o card à célula depois deste efeito.
     const grid = el.parentElement?.getBoundingClientRect();
-    const para = grid && { left: grid.left + item.x * (coluna + GAP), top: grid.top + item.y * (unidade + GAP) };
+    const para = grid && { left: grid.left + item.coluna * (larguraColuna + GAP), top: grid.top + item.linha * (unidade + GAP) };
     animarDesde(el, solto.de, para);
-  }, [acabouDeCair, solto, item.x, item.y, coluna, unidade]);
+  }, [acabouDeCair, solto, item.coluna, item.linha, larguraColuna, unidade]);
 
   const lim = limitesDe(limites, item.id);
-  const passo = { x: coluna + GAP, y: unidade + GAP };
-  const larguraPx = item.w * coluna + (item.w - 1) * GAP;
-  const alturaCard = alturaPx(item.h, unidade);
+  const passo = { horizontal: larguraColuna + GAP, vertical: unidade + GAP };
+  const larguraPx = item.largura * larguraColuna + (item.largura - 1) * GAP;
+  const alturaCard = alturaPx(item.altura, unidade);
 
   const iniciar = (borda: Borda) => {
     // offsetWidth/Height ignoram transformações: no meio da animação de layout o card está com escala.
     const ret = { width: elRef.current!.offsetWidth, height: elRef.current!.offsetHeight };
-    inicio.current = { x: item.x, y: item.y, w: item.w, h: item.h, ret };
+    inicio.current = { coluna: item.coluna, linha: item.linha, largura: item.largura, altura: item.altura, ret };
     setAoVivo({
       largura: ret.width,
       altura: ret.height,
-      ancoraDireita: borda.includes("l"),
-      ancoraBaixo: borda.includes("t"),
+      ancoraDireita: borda.includes("esquerda"),
+      ancoraBaixo: borda.includes("topo"),
     });
   };
 
@@ -170,17 +171,17 @@ function CardDaGrade({
     borda: Borda,
     colunas: number,
     linhas: number,
-    base: { x: number; y: number; w: number; h: number },
+    base: Caixa,
   ) => {
-    const esq = borda.includes("l");
-    const cima = borda.includes("t");
+    const esq = borda.includes("esquerda");
+    const cima = borda.includes("topo");
     grade.redimensionar(
       item.id,
       {
-        x: esq ? base.x + colunas : base.x,
-        y: cima ? base.y + linhas : base.y,
-        w: esq ? base.w - colunas : borda.includes("r") ? base.w + colunas : base.w,
-        h: cima ? base.h - linhas : borda.includes("b") ? base.h + linhas : base.h,
+        coluna: esq ? base.coluna + colunas : base.coluna,
+        linha: cima ? base.linha + linhas : base.linha,
+        largura: esq ? base.largura - colunas : borda.includes("direita") ? base.largura + colunas : base.largura,
+        altura: cima ? base.altura - linhas : borda.includes("base") ? base.altura + linhas : base.altura,
       },
       borda,
     );
@@ -188,36 +189,36 @@ function CardDaGrade({
 
   // O card acompanha o ponteiro em px (dentro dos limites); a grade encaixa na coluna/linha mais próxima.
   const mover = (borda: Borda) => (dx: number, dy: number) => {
-    const i = inicio.current;
-    if (!i || coluna <= 0) return;
-    const px = (w: number) => w * coluna + (w - 1) * GAP;
+    const partida = inicio.current;
+    if (!partida || larguraColuna <= 0) return;
+    const px = (largura: number) => largura * larguraColuna + (largura - 1) * GAP;
     // Até a borda da grade: pela esquerda, até a coluna 0; pela direita, até a 12.
-    const maxW = borda.includes("l")
-      ? Math.min(lim.max.w, i.x + i.w)
-      : borda.includes("r")
-        ? Math.min(lim.max.w, COLUNAS - i.x)
-        : i.w;
-    const maxH = borda.includes("t") ? Math.min(lim.max.h, i.y + i.h) : lim.max.h;
-    const dw = borda.includes("l") ? -dx : borda.includes("r") ? dx : 0;
-    const dh = borda.includes("t") ? -dy : borda.includes("b") ? dy : 0;
+    const maxW = borda.includes("esquerda")
+      ? Math.min(lim.max.largura, partida.coluna + partida.largura)
+      : borda.includes("direita")
+        ? Math.min(lim.max.largura, COLUNAS - partida.coluna)
+        : partida.largura;
+    const maxH = borda.includes("topo") ? Math.min(lim.max.altura, partida.linha + partida.altura) : lim.max.altura;
+    const dw = borda.includes("esquerda") ? -dx : borda.includes("direita") ? dx : 0;
+    const dh = borda.includes("topo") ? -dy : borda.includes("base") ? dy : 0;
     setAoVivo({
-      largura: Math.min(Math.max(i.ret.width + dw, px(lim.min.w)), px(maxW)),
-      altura: Math.min(Math.max(i.ret.height + dh, alturaPx(lim.min.h, unidade)), alturaPx(maxH, unidade)),
-      ancoraDireita: borda.includes("l"),
-      ancoraBaixo: borda.includes("t"),
+      largura: Math.min(Math.max(partida.ret.width + dw, px(lim.min.largura)), px(maxW)),
+      altura: Math.min(Math.max(partida.ret.height + dh, alturaPx(lim.min.altura, unidade)), alturaPx(maxH, unidade)),
+      ancoraDireita: borda.includes("esquerda"),
+      ancoraBaixo: borda.includes("topo"),
     });
     // Só a seleção acompanha o ponteiro; o card e a grade não mudam até soltar.
-    alvo.current = { colunas: Math.round(dx / passo.x), linhas: Math.round(dy / passo.y) };
+    alvo.current = { colunas: Math.round(dx / passo.horizontal), linhas: Math.round(dy / passo.vertical) };
   };
 
   // Ao soltar, o card assume o tamanho encaixado de uma vez (a mola do layout o leva até lá).
   const soltar = (borda: Borda) => {
-    const i = inicio.current;
-    const a = alvo.current;
+    const partida = inicio.current;
+    const destino = alvo.current;
     inicio.current = null;
     alvo.current = null;
     setAoVivo(null);
-    if (i && a) aplicar(borda, a.colunas, a.linhas, i);
+    if (partida && destino) aplicar(borda, destino.colunas, destino.linhas, partida);
   };
 
   return (
@@ -284,7 +285,7 @@ function CardDaGrade({
                 }`}
                 title="Largura (colunas) × altura (linhas)"
               >
-                {item.w} × {item.h}
+                {item.largura} × {item.altura}
               </span>
               <Tooltip conteudo="Ocultar card">
                 <button
@@ -301,7 +302,7 @@ function CardDaGrade({
               <AlcaBorda
                 key={borda}
                 borda={borda}
-                rotulo={`Redimensionar ${rotulo} ${NOME_BORDA[borda]} (${item.w} colunas × ${item.h} linhas; setas)`}
+                rotulo={`Redimensionar ${rotulo} ${NOME_BORDA[borda]} (${item.largura} colunas × ${item.altura} linhas; setas)`}
                 aoIniciar={() => iniciar(borda)}
                 aoMover={mover(borda)}
                 aoSoltar={() => soltar(borda)}
@@ -334,7 +335,7 @@ type Operacao = { source: { id: string | number; type?: unknown } | null };
 
 /**
  * Grade personalizável da tela (D43): 12 colunas e linhas de altura fixa; cada
- * card tem posição (`x`, `y`) e tamanho (`w`, `h`). No modo de edição
+ * card tem posição (`coluna`, `linha`) e tamanho (`largura`, `altura`). No modo de edição
  * (`BarraEdicao`) os cards são arrastados por qualquer ponto (dnd-kit),
  * redimensionados pelas quatro bordas e cantos e ocultados. Soltar sobre outro
  * card troca os dois de lugar; soltar num espaço vazio leva o card para aquela
@@ -367,26 +368,26 @@ export function GradePersonalizavel({
   const acesso = useAcesso();
   // O card desabilitado não monta o conteúdo, então as consultas internas dele não saem.
   const conteudo = (id: string) => {
-    const b = acesso.bloqueio(id, fontes[id]);
-    return b ? <CardBloqueado titulo={rotulos[id] ?? id} bloqueio={b} /> : cards[id];
+    const bloqueio = acesso.bloqueio(id, fontes[id]);
+    return bloqueio ? <CardBloqueado titulo={rotulos[id] ?? id} bloqueio={bloqueio} /> : cards[id];
   };
   const ref = useRef<HTMLDivElement>(null);
   const larga = grade.larga;
   const unidade = useUnidade(ref, alturaTotal(grade.padrao));
-  const coluna = useColuna(ref);
+  const larguraColuna = useColuna(ref);
   const { layout, limites, editando } = grade;
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [solto, setSolto] = useState<Solto | null>(null);
   // Distância do ponteiro até o canto do card ao pegá-lo (o card cai alinhado ao que se vê). Medida no
   // pointerdown, antes de o dnd-kit tirar o card do fluxo.
-  const pegada = useRef({ x: 0, y: 0 });
+  const pegada = useRef({ horizontal: 0, vertical: 0 });
   // Posição do ponteiro na tela, acompanhada pela janela durante a edição (a do dnd-kit não vem em
   // coordenadas da tela).
-  const ponteiro = useRef({ x: 0, y: 0 });
+  const ponteiro = useRef({ horizontal: 0, vertical: 0 });
   useLayoutEffect(() => {
     if (!editando) return;
-    const acompanhar = (e: PointerEvent) => {
-      ponteiro.current = { x: e.clientX, y: e.clientY };
+    const acompanhar = (evento: PointerEvent) => {
+      ponteiro.current = { horizontal: evento.clientX, vertical: evento.clientY };
     };
     window.addEventListener("pointermove", acompanhar, { capture: true, passive: true });
     window.addEventListener("pointerdown", acompanhar, { capture: true, passive: true });
@@ -399,9 +400,9 @@ export function GradePersonalizavel({
   // porque os outros cards já se movem durante o arraste.
   const caixas = useRef(new Map<string, { esquerda: number; topo: number; direita: number; base: number }>());
 
-  const resultadoDe = (p: Previa | null): Layout | null => {
-    if (!p) return null;
-    return p.tipo === "troca" ? trocar(layout, p.id, p.com, limites) : posicionar(layout, p.id, p.x, p.y, limites);
+  const resultadoDe = (previaAtual: Previa | null): Layout | null => {
+    if (!previaAtual) return null;
+    return previaAtual.tipo === "troca" ? trocar(layout, previaAtual.id, previaAtual.com, limites) : posicionar(layout, previaAtual.id, previaAtual.coluna, previaAtual.linha, limites);
   };
 
   // Durante o arraste, os outros cards já aparecem onde vão ficar; o arrastado continua na origem.
@@ -415,47 +416,47 @@ export function GradePersonalizavel({
     const atual = encontrar(layout, id);
     const el = ref.current;
     if (!atual || !el) return null;
-    const { x: cx, y: cy } = ponteiro.current;
+    const { horizontal: cx, vertical: cy } = ponteiro.current;
     const px = cx + window.scrollX;
     const py = cy + window.scrollY;
-    for (const [outro, c] of caixas.current) {
-      if (outro !== id && px >= c.esquerda && px <= c.direita && py >= c.topo && py <= c.base) {
+    for (const [outro, caixa] of caixas.current) {
+      if (outro !== id && px >= caixa.esquerda && px <= caixa.direita && py >= caixa.topo && py <= caixa.base) {
         return { tipo: "troca", id, com: outro };
       }
     }
-    const r = el.getBoundingClientRect();
-    const x = Math.round((cx - pegada.current.x - r.left) / (coluna + GAP));
-    const y = Math.round((cy - pegada.current.y - r.top) / (unidade + GAP));
+    const retangulo = el.getBoundingClientRect();
+    const colunaAlvo = Math.round((cx - pegada.current.horizontal - retangulo.left) / (larguraColuna + GAP));
+    const linhaAlvo = Math.round((cy - pegada.current.vertical - retangulo.top) / (unidade + GAP));
     return {
       tipo: "posicao",
       id,
-      x: Math.min(Math.max(x, 0), COLUNAS - atual.w),
-      y: Math.max(y, 0),
+      coluna: Math.min(Math.max(colunaAlvo, 0), COLUNAS - atual.largura),
+      linha: Math.max(linhaAlvo, 0),
     };
   };
 
   const atualizarPrevia = (operacao: Operacao) => {
     const nova = calcularPrevia(operacao);
-    setPrevia((p) => (JSON.stringify(p) === JSON.stringify(nova) ? p : nova));
+    setPrevia((atual) => (JSON.stringify(atual) === JSON.stringify(nova) ? atual : nova));
   };
 
-  const visiveis = exibido.itens.filter((i) => i.visivel);
+  const visiveis = exibido.itens.filter((itemLayout) => itemLayout.visivel);
 
   /** Ao pegar um card: onde o ponteiro está nele e as caixas de todos os cards (para a troca). */
-  const aoPegar = (e: React.PointerEvent) => {
+  const aoPegar = (evento: React.PointerEvent) => {
     if (!editando) return;
-    const card = (e.target as HTMLElement).closest<HTMLElement>("[data-card]");
+    const card = (evento.target as HTMLElement).closest<HTMLElement>("[data-card]");
     if (!card || !ref.current?.contains(card)) return;
     const ret = card.getBoundingClientRect();
-    pegada.current = { x: e.clientX - ret.left, y: e.clientY - ret.top };
+    pegada.current = { horizontal: evento.clientX - ret.left, vertical: evento.clientY - ret.top };
     caixas.current = new Map();
     ref.current.querySelectorAll<HTMLElement>("[data-card]").forEach((el) => {
-      const r = el.getBoundingClientRect();
+      const retangulo = el.getBoundingClientRect();
       caixas.current.set(el.dataset.card!, {
-        esquerda: r.left + window.scrollX,
-        topo: r.top + window.scrollY,
-        direita: r.right + window.scrollX,
-        base: r.bottom + window.scrollY,
+        esquerda: retangulo.left + window.scrollX,
+        topo: retangulo.top + window.scrollY,
+        direita: retangulo.right + window.scrollX,
+        base: retangulo.bottom + window.scrollY,
       });
     });
   };
@@ -464,15 +465,15 @@ export function GradePersonalizavel({
     return (
       <div ref={ref} className="flex flex-col gap-2.5">
         {[...visiveis]
-          .sort((a, b) => a.y - b.y || a.x - b.x)
-          .map((i) => (
+          .sort((primeiro, segundo) => primeiro.linha - segundo.linha || primeiro.coluna - segundo.coluna)
+          .map((itemLayout) => (
             // Blocos (KPIs) ficam com a altura do conteúdo; os outros cards, com altura fixa.
             <div
-              key={i.id}
-              style={blocos.includes(i.id) ? undefined : { height: alturaPx(i.h, UNIDADE_EMPILHADA) }}
-              className={blocos.includes(i.id) ? "" : "*:h-full"}
+              key={itemLayout.id}
+              style={blocos.includes(itemLayout.id) ? undefined : { height: alturaPx(itemLayout.altura, UNIDADE_EMPILHADA) }}
+              className={blocos.includes(itemLayout.id) ? "" : "*:h-full"}
             >
-              {conteudo(i.id)}
+              {conteudo(itemLayout.id)}
             </div>
           ))}
       </div>
@@ -507,7 +508,7 @@ export function GradePersonalizavel({
           }
         } else if (!event.canceled && source.type === "item-bloco") {
           const bloco = String((source.data as { bloco?: string }).bloco);
-          const ids = (layout.blocos[bloco] ?? []).filter((i) => i.visivel).map((i) => i.id);
+          const ids = (layout.blocos[bloco] ?? []).filter((itemLayout) => itemLayout.visivel).map((itemLayout) => itemLayout.id);
           grade.ordenarBloco(bloco, move(ids, event));
         }
       }}
@@ -520,11 +521,11 @@ export function GradePersonalizavel({
       >
         {/* Células da grade na edição (referência para encaixar e espaço para soltar). */}
         {editando &&
-          Array.from({ length: linhas * COLUNAS }, (_, n) => (
+          Array.from({ length: linhas * COLUNAS }, (_, indice) => (
             <div
-              key={`celula-${n}`}
+              key={`celula-${indice}`}
               aria-hidden
-              style={{ gridColumn: (n % COLUNAS) + 1, gridRow: Math.floor(n / COLUNAS) + 1 }}
+              style={{ gridColumn: (indice % COLUNAS) + 1, gridRow: Math.floor(indice / COLUNAS) + 1 }}
               className="rounded-lg bg-secondary/35 dark:bg-secondary/15"
             />
           ))}
@@ -535,7 +536,7 @@ export function GradePersonalizavel({
             grade={grade}
             rotulo={rotulos[item.id] ?? item.id}
             unidade={unidade}
-            coluna={coluna}
+            larguraColuna={larguraColuna}
             bloco={blocos.includes(item.id)}
             solto={solto}
           >

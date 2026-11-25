@@ -1,5 +1,74 @@
 # SGBI v2
 
+## Publicar uma versão: imagem Docker e instalador
+
+O v2 é entregue como uma **imagem Docker** (`sgsistemas/sgbi-v2:<tag>`, uma só para todos os clientes) e um **instalador Linux** em Python que o técnico roda no servidor do cliente. Os dois ficam neste repositório e se geram à parte. Visão geral e decisões: [`docs/implantacao.md`](docs/implantacao.md).
+
+### 1. Buildar e subir a imagem
+
+Precisa de Docker e do login da equipe no Docker Hub (peça a credencial ao coordenador):
+
+```bash
+docker login
+npm run build:docker
+```
+
+O script pergunta a **tag** (qualquer nome válido do Docker: `1.0.0`, `homologation`, `teste`...), faz o `docker build --no-cache` e pergunta se envia (`docker push`) para `sgsistemas/sgbi-v2:<versão>`. Sem perguntas:
+
+```bash
+npm run build:docker -- 1.0.0 --push
+```
+
+- O build **não precisa de `.env`** nem de banco; o que muda por cliente (banco, API do VX, `JWT_SECRET`, slug) entra por variável de ambiente ao rodar o container. O `.dockerignore` deixa o `.env*` fora da imagem.
+- Ao subir, o container aplica as migrations do banco sozinho (`scripts/migrar.mjs`; ver `docs/decisoes-e-pendencias.md`, D48).
+- Para testar a imagem na sua máquina antes de enviar (troque pelos dados do seu MySQL):
+
+```bash
+docker build -t sgbi-v2:local .
+docker run --rm -p 9000:3000 -e API_VIEW=http://host:porta -e DB_HOST=host -e DB_PORT=3306 \
+  -e DB_USER=root -e DB_PASSWORD=senha -e DB_DATABASE=sgbi_teste -e CLIENT_SLUG=teste \
+  -e JWT_SECRET="$(openssl rand -base64 32)" sgbi-v2:local
+```
+
+### 2. Gerar o instalador
+
+O instalador fica em `installer/linux/` (detalhes no [README dele](installer/linux/README.md)). Precisa só de Docker. São **dois executáveis**: um para Ubuntu 16.04 a 22.04 e outro para Ubuntu 24.04 em diante.
+
+1. *(Opcional)* Para a versão aparecer no menu do instalador, acrescente a tag em `VERSOES_CONHECIDAS` no `installer/linux/config.py`. Não é necessário: qualquer tag pode ser digitada na hora, sem recompilar.
+2. Crie o `installer/linux/resources/credentials.json` a partir do modelo (`credentials-example.json`, na mesma pasta) e preencha: `docker` (credencial do Docker Hub, para o instalador baixar a imagem) e `ftp` (FTP da SG, de onde vem a `libmysqlclient`). Ele **não vai para o git** e fica embutido no executável, então use um token somente leitura no Docker Hub:
+
+```bash
+cp installer/linux/resources/credentials-example.json installer/linux/resources/credentials.json
+```
+
+3. Compile (na pasta `installer/linux`):
+
+```bash
+cd installer/linux
+
+# Ubuntu 24.04 em diante -> dist/instalador-sgbi-v2-ubuntu-24
+sudo docker run --rm -v "$(pwd):/src" ubuntu:24.04 sh -c "\
+    apt-get update && \
+    apt-get install -y python3 python3-pip python3-venv python3-dev && \
+    python3 -m venv /opt/venv && . /opt/venv/bin/activate && \
+    pip install --upgrade pip && pip install -r /src/requirements.txt && \
+    cd /src && pyinstaller instalador-sgbi-v2-ubuntu-24.spec --clean"
+```
+
+O do **Ubuntu 16.04 a 22.04** (`dist/instalador-sgbi-v2-ubuntu-16-ate-22`) é compilado no Ubuntu 16.04 com Python 3.8 e demora mais; o comando está no [README do instalador](installer/linux/README.md#compilar-o-instalador). Os arquivos de `dist/` e `build/` ficam como `root` e não vão para o git.
+
+4. Entregue o executável ao técnico. No servidor do cliente ele roda **como root**:
+
+```bash
+sudo ./instalador-sgbi-v2-ubuntu-24
+```
+
+O menu tem instalação completa (MySQL + cliente), só cliente, só MySQL e atualização de versão. Para o headquarter, o instalador baixa a `libmysqlclient` por FTP: exporte `SGBI_FTP_HOST`, `SGBI_FTP_USER` e `SGBI_FTP_PASS` antes de rodar.
+
+Para testar o código do instalador sem compilar: `cd installer/linux && python3 -m unittest -v`.
+
+## Sobre o projeto
+
 Reescrita do **SGBI** (Business Intelligence do VX) em Next.js 16. Telas prontas:
 
 - **Painel Executivo** (`/`): indicadores de venda, margem, despesas, metas, compras e cancelamentos em uma única tela, sem rolagem. O layout é personalizável (lápis no cabeçalho: arrastar, redimensionar e ocultar cards, salvo no navegador).
@@ -61,6 +130,8 @@ O `.env.local` não é versionado. As variáveis são lidas só no servidor (`sr
 | `npm run dev` | Servidor de desenvolvimento (Turbopack) |
 | `npm run build` | Build de produção (não acessa o banco) |
 | `npm start` | Sobe o build de produção |
+| `npm run build:docker` | Gera a imagem `sgsistemas/sgbi-v2:<tag>` e pergunta se envia ao Docker Hub |
+| `npm run db:migrar` | Aplica as migrations no banco do `.env.local` (o container faz isso ao subir) |
 | `npm run lint` | ESLint |
 | `npm run db:pull` | Introspecta o banco e gera o schema Drizzle em `drizzle/` |
 | `npm run db:studio` | Drizzle Studio |
@@ -117,6 +188,7 @@ Componente (useQuery) → /api/<tela>/... (route.ts) → server/data.ts ('use ca
 - **Uma pasta por tela** em `src/features/<tela>/`, com a mesma divisão do Painel Executivo. O que for usado por mais de uma tela fica em `src/lib/`, `src/components/` ou `src/server/`.
 - **Visual do BI antigo:** azul `#4B8CFF`, cards `rounded-2xl`, fonte Inter. Use sempre as classes dos tokens (`bg-card`, `text-muted-foreground`...), nunca cores fixas, para funcionar nos dois temas.
 - **Layout compacto:** a tela deve caber sem rolar em 1536 × 864. Verifique também em 1280, 1366 e 1920 px de largura.
+- **Nomes inteiros:** nada de variáveis, parâmetros, propriedades ou outras declarações de 1 caractere (`e`, `i`, `x`, `a`, `b`...); use `evento`, `indice`, `coluna`, `primeiro`... O ESLint (`id-length`) confere. Detalhes no `CLAUDE.md`.
 - **Valores com 2 casas decimais** (moeda, %, p.p.) via `format.ts`.
 - **Sem controles nativos** nos filtros (`<select>`, `<input type="date">`, checkbox): use os componentes de `src/components/ui/`.
 - **Avisos** (dados incompletos, erros de carregamento) vão para o botão de avisos da barra lateral, com `useAvisos()`, e não para faixas no topo da tela.

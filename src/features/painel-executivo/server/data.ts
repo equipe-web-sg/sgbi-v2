@@ -74,10 +74,10 @@ export async function getSerie(
         .groupBy(analiseGerencial.data);
     case "pdv":
       // logpdv (bate com a venda PDV da analise); o parfil tem cerca de metade (P6).
-      return (await getCuponsDiarios(periodo, lojas)).map((d) => ({
-        data: d.data,
-        vendaPdv: d.vendaPdv,
-        tickets: d.cupons,
+      return (await getCuponsDiarios(periodo, lojas)).map((cuponsDia) => ({
+        data: cuponsDia.data,
+        vendaPdv: cuponsDia.vendaPdv,
+        tickets: cuponsDia.cupons,
       }));
     case "cancelamentos":
       return db
@@ -192,10 +192,10 @@ export async function getDepartamentos(
       .from(tabela),
   ]);
 
-  const descricaoPorCodigo = new Map(descricoes.map((d) => [d.codigo, d.descricao]));
-  const anteriorPorCodigo = new Map(anterior.map((a) => [a.codigo, a]));
-  const codigos = new Set([...atual.map((a) => a.codigo), ...anterior.map((a) => a.codigo)]);
-  const atualPorCodigo = new Map(atual.map((a) => [a.codigo, a]));
+  const descricaoPorCodigo = new Map(descricoes.map((itemDescricao) => [itemDescricao.codigo, itemDescricao.descricao]));
+  const anteriorPorCodigo = new Map(anterior.map((registro) => [registro.codigo, registro]));
+  const codigos = new Set([...atual.map((registro) => registro.codigo), ...anterior.map((registro) => registro.codigo)]);
+  const atualPorCodigo = new Map(atual.map((registro) => [registro.codigo, registro]));
 
   const linhas: LinhaNivel[] = [...codigos]
     .map((codigo) => ({
@@ -206,8 +206,8 @@ export async function getDepartamentos(
       compraAnterior: anteriorPorCodigo.get(codigo)?.compra ?? 0,
       vendaAnterior: anteriorPorCodigo.get(codigo)?.venda ?? 0,
     }))
-    .filter((l) => l.compra || l.venda || l.compraAnterior || l.vendaAnterior)
-    .sort((a, b) => b.venda - a.venda);
+    .filter((linha) => linha.compra || linha.venda || linha.compraAnterior || linha.vendaAnterior)
+    .sort((registro, segundo) => segundo.venda - registro.venda);
 
   return { linhas };
 }

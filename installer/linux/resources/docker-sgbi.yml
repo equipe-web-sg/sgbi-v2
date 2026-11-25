@@ -1,0 +1,17 @@
+version: '3'
+services:
+  sgbi:
+    image: sgsistemas/sgbi-v2:{{SGBI_VERSION}}
+    restart: unless-stopped
+    container_name: sgbi-v2-{{CLIENT_SLUG}}
+    ports:
+      - {{SGBI_PORT}}:3000
+    environment:
+      - API_VIEW={{API_HOST}}:{{API_PORT}}
+      - DB_HOST={{DB_HOST}}
+      - DB_USER=root
+      - DB_PASSWORD={{DB_PASSWORD}}
+      - DB_DATABASE={{DB_DATABASE}}
+      - DB_PORT={{DB_PORT}}
+      - CLIENT_SLUG={{CLIENT_SLUG}}
+      - JWT_SECRET={{JWT_SECRET}}

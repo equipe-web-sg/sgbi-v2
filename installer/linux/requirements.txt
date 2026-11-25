@@ -1,0 +1,9 @@
+# --- Bibliotecas de Interface ---
+colorama
+rich
+
+# --- Conexão com Banco de Dados ---
+mysql-connector-python
+
+# --- Ferramenta de Compilação ---
+pyinstaller

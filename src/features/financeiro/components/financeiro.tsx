@@ -29,16 +29,16 @@ import { FONTES, LAYOUT_PADRAO, LIMITES, ROTULOS } from "../layout";
 
 type FiltrosEstado = { mes: string | null; filiais: number[] | null };
 
-const carregando = (q: { isPending: boolean; isPlaceholderData: boolean; fetchStatus: string }) =>
-  (q.isPending && q.fetchStatus !== "idle") || q.isPlaceholderData;
-const max = (a: string, b: string) => (a > b ? a : b);
-const min = (a: string, b: string) => (a < b ? a : b);
+const carregando = (consulta: { isPending: boolean; isPlaceholderData: boolean; fetchStatus: string }) =>
+  (consulta.isPending && consulta.fetchStatus !== "idle") || consulta.isPlaceholderData;
+const max = (primeiro: string, segundo: string) => (primeiro > segundo ? primeiro : segundo);
+const min = (primeiro: string, segundo: string) => (primeiro < segundo ? primeiro : segundo);
 
 /** Mês (YYYY-MM) `n` meses antes. */
-function mesesAntes(mes: string, n: number) {
-  const [a, m] = mes.split("-").map(Number);
-  const d = new Date(Date.UTC(a, m - 1 - n, 1));
-  return d.toISOString().slice(0, 7);
+function mesesAntes(mes: string, quantidade: number) {
+  const [ano, numeroMes] = mes.split("-").map(Number);
+  const data = new Date(Date.UTC(ano, numeroMes - 1 - quantidade, 1));
+  return data.toISOString().slice(0, 7);
 }
 
 /** Nomes dos KPIs na lista de ocultos. */
@@ -59,7 +59,7 @@ export function Financeiro() {
   const filtros: FiltrosFinanceiro = {
     // null = mês do último dia com venda (resolvido quando as filiais chegam).
     mes: estado.mes ?? dataMaxima?.slice(0, 7) ?? "",
-    filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((f) => f.codigo) ?? [],
+    filiais: estado.filiais ?? filiaisQuery.data?.filiais.map((filial) => filial.codigo) ?? [],
   };
 
   // Referência ("hoje"): último dia com venda, limitado ao mês escolhido (como em Metas).
@@ -91,7 +91,7 @@ export function Financeiro() {
   const pendente = carregando(movimentos);
   const grade = useLayout("financeiro", LAYOUT_PADRAO, LIMITES);
 
-  const erro = [filiaisQuery, movimentos, movimentosAno, compromissos, prazos].find((q) => q.isError);
+  const erro = [filiaisQuery, movimentos, movimentosAno, compromissos, prazos].find((consulta) => consulta.isError);
   const avisos: Aviso[] = [];
   if (erro) {
     avisos.push({
@@ -138,15 +138,15 @@ export function Financeiro() {
               aria-label="Mês de referência"
               className="w-40"
               value={filtros.mes}
-              options={[...new Set([...meses, filtros.mes])].map((m) => ({ value: m, label: formatMesAno(m) }))}
-              onValueChange={(m) => setEstado((e) => ({ ...e, mes: m }))}
+              options={[...new Set([...meses, filtros.mes])].map((mesOpcao) => ({ value: mesOpcao, label: formatMesAno(mesOpcao) }))}
+              onValueChange={(mesEscolhido) => setEstado((filtrosEstado) => ({ ...filtrosEstado, mes: mesEscolhido }))}
             />
           </Field>
           <Field label="Filial">
             <FiliaisSelect
               filiais={filiaisQuery.data.filiais}
               value={filtros.filiais}
-              onChange={(value) => setEstado((e) => ({ ...e, filiais: value }))}
+              onChange={(value) => setEstado((filtrosEstado) => ({ ...filtrosEstado, filiais: value }))}
             />
           </Field>
           <BarraEdicao
@@ -181,7 +181,7 @@ export function Financeiro() {
   const diasDoMes = porDia(lista, decorrido);
   const previsto = fluxoPrevisto(lista, referencia, dias, "dia");
   const menor = previsto.reduce<{ valor: number; data: string } | null>(
-    (m, l) => (!m || l.acumulado < m.valor ? { valor: l.acumulado, data: l.inicio } : m),
+    (acumulado, linhaPrevista) => (!acumulado || linhaPrevista.acumulado < acumulado.valor ? { valor: linhaPrevista.acumulado, data: linhaPrevista.inicio } : acumulado),
     null,
   );
   const abertos = vencidos(lista);
@@ -206,9 +206,9 @@ export function Financeiro() {
                 anterior: anterior,
                 menorSaldo: menor,
                 series: {
-                  entradas: diasDoMes.map((d) => ({ data: d.data, valor: d.entradas })),
-                  saidas: diasDoMes.map((d) => ({ data: d.data, valor: d.saidas })),
-                  resultado: diasDoMes.map((d) => ({ data: d.data, valor: d.entradas - d.saidas })),
+                  entradas: diasDoMes.map((diaCaixa) => ({ data: diaCaixa.data, valor: diaCaixa.entradas })),
+                  saidas: diasDoMes.map((diaCaixa) => ({ data: diaCaixa.data, valor: diaCaixa.saidas })),
+                  resultado: diasDoMes.map((diaCaixa) => ({ data: diaCaixa.data, valor: diaCaixa.entradas - diaCaixa.saidas })),
                 },
                 carregando: pendente,
               })}
@@ -257,8 +257,8 @@ export function Financeiro() {
                 prazoPagamento: prazos.data?.pagamento ?? null,
                 vencidoReceber: abertos.receber,
                 vencidoPagar: abertos.pagar,
-                previstoEntradas: previsto.reduce((t, l) => t + l.entradas, 0),
-                previstoSaidas: previsto.reduce((t, l) => t + l.saidas, 0),
+                previstoEntradas: previsto.reduce((acumulado, linhaPrevista) => acumulado + linhaPrevista.entradas, 0),
+                previstoSaidas: previsto.reduce((acumulado, linhaPrevista) => acumulado + linhaPrevista.saidas, 0),
               }}
               carregando={pendente || carregando(prazos)}
             />

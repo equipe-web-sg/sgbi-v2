@@ -18,10 +18,10 @@ describe("dataReferencia", () => {
 
 describe("periodosDaReferencia (referência quinta, 05/11/2026)", () => {
   const abas = periodosDaReferencia("2026-11", "2026-11-05");
-  const aba = (id: string) => abas.find((a) => a.id === id)!;
+  const aba = (id: string) => abas.find((periodoMeta) => periodoMeta.id === id)!;
 
   it("tem as seis abas na ordem", () => {
-    expect(abas.map((a) => a.id)).toEqual(["dia", "semana", "quinzena1", "quinzena2", "mes", "ano"]);
+    expect(abas.map((periodoMeta) => periodoMeta.id)).toEqual(["dia", "semana", "quinzena1", "quinzena2", "mes", "ano"]);
   });
 
   it("dia: o próprio dia, comparado com o mesmo dia da semana anterior", () => {
@@ -65,13 +65,13 @@ describe("periodosDaReferencia (referência quinta, 05/11/2026)", () => {
 
   it("mês encerrado: todas as abas têm realizado completo", () => {
     const fechado = periodosDaReferencia("2026-10", "2026-10-31");
-    expect(fechado.find((a) => a.id === "mes")!.decorrido).toEqual({ inicio: "2026-10-01", fim: "2026-10-31" });
-    expect(fechado.find((a) => a.id === "quinzena2")!.decorrido).toEqual({ inicio: "2026-10-16", fim: "2026-10-31" });
+    expect(fechado.find((periodoMeta) => periodoMeta.id === "mes")!.decorrido).toEqual({ inicio: "2026-10-01", fim: "2026-10-31" });
+    expect(fechado.find((periodoMeta) => periodoMeta.id === "quinzena2")!.decorrido).toEqual({ inicio: "2026-10-16", fim: "2026-10-31" });
   });
 
   it("mês sem dados ainda: o dia é o 1º do mês e nenhuma aba tem realizado", () => {
     const futuro = periodosDaReferencia("2026-12", "2026-11-05");
-    expect(futuro.find((a) => a.id === "dia")!.periodo).toEqual({ inicio: "2026-12-01", fim: "2026-12-01" });
-    expect(futuro.find((a) => a.id === "mes")!.decorrido).toBeNull();
+    expect(futuro.find((periodoMeta) => periodoMeta.id === "dia")!.periodo).toEqual({ inicio: "2026-12-01", fim: "2026-12-01" });
+    expect(futuro.find((periodoMeta) => periodoMeta.id === "mes")!.decorrido).toBeNull();
   });
 });

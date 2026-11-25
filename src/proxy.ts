@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { origemDoNavegador } from "@/lib/origem";
 import { lerSessao, nomeDoCookie } from "@/server/sessao";
 
 /**
@@ -9,17 +10,22 @@ import { lerSessao, nomeDoCookie } from "@/server/sessao";
  */
 export default async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // Redirecionar pelo endereço que o navegador usou, não pelo de bind (ver `origemDoNavegador`).
+  const origem = origemDoNavegador(request.headers, {
+    host: request.nextUrl.host,
+    protocolo: request.nextUrl.protocol,
+  });
   const usuario = await lerSessao(request.cookies.get(nomeDoCookie())?.value);
 
   if (pathname === "/login") {
-    return usuario ? NextResponse.redirect(new URL("/", request.url)) : NextResponse.next();
+    return usuario ? NextResponse.redirect(new URL("/", origem)) : NextResponse.next();
   }
   if (usuario) return NextResponse.next();
 
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "Sessão expirada. Entre novamente." }, { status: 401 });
   }
-  const login = new URL("/login", request.url);
+  const login = new URL("/login", origem);
   if (pathname !== "/") login.searchParams.set("de", `${pathname}${search}`);
   return NextResponse.redirect(login);
 }

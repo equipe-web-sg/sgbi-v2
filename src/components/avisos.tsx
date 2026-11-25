@@ -44,7 +44,7 @@ export function useAvisos(origem: string, avisos: Aviso[]) {
   // `definir` é estável; o objeto do contexto muda a cada aviso registrado e não pode
   // ser dependência da limpeza (ela apagaria o aviso logo depois de registrá-lo).
   const definir = use(Contexto)?.definir;
-  const chave = JSON.stringify(avisos.map((a) => [a.id, a.nivel, a.titulo, a.detalhes, a.acao?.label]));
+  const chave = JSON.stringify(avisos.map((aviso) => [aviso.id, aviso.nivel, aviso.titulo, aviso.detalhes, aviso.acao?.label]));
   const registrar = useEffectEvent(() => definir?.(origem, avisos));
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export function AvisosBotao({
   const avisos = contexto?.avisos ?? [];
   if (!avisos.length) return null;
 
-  const temErro = avisos.some((a) => a.nivel === "erro");
+  const temErro = avisos.some((aviso) => aviso.nivel === "erro");
   const rotulo = `${avisos.length} ${avisos.length === 1 ? "aviso" : "avisos"}`;
 
   return (
@@ -118,9 +118,9 @@ export function AvisosBotao({
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-semibold leading-snug">{aviso.titulo}</div>
-                  {aviso.detalhes?.map((d) => (
-                    <p key={d} className="mt-0.5 text-xs text-muted-foreground">
-                      {d}
+                  {aviso.detalhes?.map((detalhe) => (
+                    <p key={detalhe} className="mt-0.5 text-xs text-muted-foreground">
+                      {detalhe}
                     </p>
                   ))}
                   {aviso.acao && (
