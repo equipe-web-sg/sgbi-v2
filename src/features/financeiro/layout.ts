@@ -7,19 +7,20 @@ import type { Layout, Limites } from "@/lib/layout";
  * padrão ocupar a tela sem rolar). Ao mudar ids ou a estrutura, suba a `versao`.
  */
 export const LAYOUT_PADRAO: Layout = {
-  versao: 3,
+  versao: 4,
   itens: [
     { id: "kpis", coluna: 0, linha: 0, largura: 12, altura: 3, visivel: true },
     { id: "evolucao-caixa", coluna: 0, linha: 3, largura: 7, altura: 5, visivel: true },
     { id: "categorias", coluna: 7, linha: 3, largura: 5, altura: 5, visivel: true },
     { id: "fluxo-previsto", coluna: 0, linha: 8, largura: 7, altura: 5, visivel: true },
     { id: "compromissos", coluna: 7, linha: 8, largura: 5, altura: 5, visivel: true },
-    { id: "saldo-contas", coluna: 0, linha: 13, largura: 3, altura: 5, visivel: true },
-    { id: "evolucao-mensal", coluna: 3, linha: 13, largura: 5, altura: 5, visivel: true },
+    // "saldo-contas" fora do padrão (sem saldos bancários, P42): o código segue em `cards-inferiores.tsx`.
+    { id: "evolucao-mensal", coluna: 0, linha: 13, largura: 8, altura: 5, visivel: true },
     { id: "indicadores-caixa", coluna: 8, linha: 13, largura: 4, altura: 5, visivel: true },
   ],
   blocos: {
-    kpis: ["saldo", "entradas", "saidas", "resultado", "menor-saldo", "cobertura"].map((id) => ({
+    // "saldo" e "cobertura" fora do padrão (dependem do saldo bancário, P42): o código segue em `kpis-financeiro.tsx`.
+    kpis: ["entradas", "saidas", "resultado", "menor-saldo"].map((id) => ({
       id,
       coluna: 0,
       linha: 0,
@@ -37,7 +38,6 @@ export const LIMITES: Limites = {
   categorias: { min: { largura: 4, altura: 4 }, max: { largura: 12, altura: 12 } },
   "fluxo-previsto": { min: { largura: 5, altura: 4 }, max: { largura: 12, altura: 20 } },
   compromissos: { min: { largura: 4, altura: 4 }, max: { largura: 12, altura: 20 } },
-  "saldo-contas": { min: { largura: 3, altura: 4 }, max: { largura: 8, altura: 10 } },
   "evolucao-mensal": { min: { largura: 4, altura: 4 }, max: { largura: 12, altura: 12 } },
   "indicadores-caixa": { min: { largura: 3, altura: 5 }, max: { largura: 8, altura: 12 } },
 };

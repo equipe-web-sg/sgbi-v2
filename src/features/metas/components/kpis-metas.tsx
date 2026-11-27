@@ -15,6 +15,7 @@ import { Sparkline } from "@/components/kpi/sparkline";
 import { formatMoeda, formatPercentual } from "@/lib/format";
 import { diferencaPp, type ResumoMeta } from "../compute";
 import type { AbaPeriodo } from "../types";
+import { explicarStatusMeta } from "../textos";
 import { StatusMetaBadge } from "./status";
 
 /** "do Dia", "da Semana"... para os títulos dos cards. */
@@ -246,7 +247,7 @@ export function kpisDasMetas({
           carregando={carregando.meta || carregando.realizado}
           valor={
             <span className="inline-flex pt-0.5">
-              <StatusMetaBadge status={resumoAtivo.status} destaque />
+              <StatusMetaBadge status={resumoAtivo.status} destaque explicacao={explicarStatusMeta(resumoAtivo)} />
             </span>
           }
           linhas={

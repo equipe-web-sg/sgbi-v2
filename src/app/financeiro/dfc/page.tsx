@@ -1,22 +1,11 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { PortaoDaTela } from "@/components/acesso/portao-da-tela";
-import { AppShell } from "@/components/app-shell";
-import { Dfc } from "@/features/financeiro/components/dfc";
+import { notFound } from "next/navigation";
 
-export const metadata: Metadata = { title: "DFC · Financeiro · SGBI" };
-
+/**
+ * DFC oculta até existir fonte de caixa (P51): sem item no menu (`NAV` em `app-shell.tsx`) e a rota responde 404.
+ * Para reativar, restaure o item do menu e a página (a tela segue em `src/features/financeiro/components/dfc.tsx`):
+ *
+ *   <AppShell><main className="flex-1 p-3"><Suspense><PortaoDaTela tela="dfc"><Dfc /></PortaoDaTela></Suspense></main></AppShell>
+ */
 export default function DfcPage() {
-  return (
-    <AppShell>
-      <main className="flex-1 p-3">
-        {/* TanStack Query reads the current time; Suspense keeps it out of the prerender. */}
-        <Suspense>
-          <PortaoDaTela tela="dfc">
-            <Dfc />
-          </PortaoDaTela>
-        </Suspense>
-      </main>
-    </AppShell>
-  );
+  notFound();
 }

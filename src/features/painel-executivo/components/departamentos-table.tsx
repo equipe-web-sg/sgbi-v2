@@ -8,10 +8,13 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { Segmented } from "@/components/ui/segmented";
+import { LinhasTooltip, Tooltip } from "@/components/ui/tooltip";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
+import { VerTodos } from "@/components/ui/ver-todos";
 import { calcularLinha, type LinhaCalculada, type Situacao } from "../compute";
 import { formatMoeda, formatPercentual, formatPontos } from "@/lib/format";
 import { painelQueries } from "../queries";
+import { explicarSituacao } from "../textos";
 import type { Filtros, Nivel } from "../types";
 import { Delta } from "@/components/kpi/kpi-card";
 
@@ -32,14 +35,28 @@ const PONTOS_SITUACAO = (Object.keys(SITUACOES) as Situacao[]).map((situacao) =>
   classe: { bom: "bg-success", atencao: "bg-warning", critico: "bg-error" }[situacao],
 }));
 
-function SituacaoBadge({ situacao }: { situacao: Situacao | null }) {
-  if (!situacao) return <span className="text-muted-foreground">—</span>;
-  const estilo = SITUACOES[situacao];
+const CLASSE_SELO = "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 align-middle text-xs font-medium outline-none focus-visible:outline-2 focus-visible:outline-ring";
+
+/** Selo da situação; o balão explica o critério e os números da linha (textos em `../textos.ts`). */
+function SituacaoBadge({ linha }: { linha: LinhaCalculada }) {
+  const explicacao = <LinhasTooltip linhas={explicarSituacao(linha)} />;
+  if (!linha.situacao) {
+    return (
+      <Tooltip conteudo={explicacao}>
+        <span tabIndex={0} className={`${CLASSE_SELO} cursor-help text-muted-foreground`}>
+          —
+        </span>
+      </Tooltip>
+    );
+  }
+  const estilo = SITUACOES[linha.situacao];
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 align-middle text-xs font-medium ${estilo.className}`}>
-      <Icon path={estilo.icon} size={0.6} aria-hidden />
-      {estilo.label}
-    </span>
+    <Tooltip conteudo={explicacao}>
+      <span tabIndex={0} className={`${CLASSE_SELO} cursor-help ${estilo.className}`}>
+        <Icon path={estilo.icon} size={0.6} aria-hidden />
+        {estilo.label}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -99,7 +116,7 @@ function colunasDepartamentos(rotuloNivel: string): Coluna<LinhaCalculada>[] {
       rotulo: "Situação",
       align: "center",
       divisor: true,
-      cell: (linhaCalculada) => <SituacaoBadge situacao={linhaCalculada.situacao} />,
+      cell: (linhaCalculada) => <SituacaoBadge linha={linhaCalculada} />,
       ordenar: (linhaCalculada) => (linhaCalculada.situacao ? ORDEM_SITUACAO[linhaCalculada.situacao] : null),
     },
   ];
@@ -123,30 +140,50 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
   const total = useMemo(() => totalizar(linhas), [linhas]);
   const rotuloNivel = NIVEIS.find((opcao) => opcao.value === nivel)!.label;
 
+  // Os controles da tabela são os mesmos no card e na janela "Ver todos" (o estado é do card).
+  const controles = (
+    <>
+      <Segmented label="Nível" value={nivel} options={NIVEIS} onChange={setNivel} />
+      <label className="relative [[data-estreito]_&]:hidden">
+        <span className="sr-only">Buscar {rotuloNivel.toLowerCase()}</span>
+        <Icon
+          path={mdiMagnify}
+          size={0.75}
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          type="search"
+          value={busca}
+          onChange={(evento) => setBusca(evento.target.value)}
+          placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
+          className="h-9 w-52 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
+        />
+      </label>
+    </>
+  );
+  const tabela = (
+    <DataTable
+      colunas={colunasDepartamentos(rotuloNivel)}
+      linhas={filtradas}
+      chave={(linhaCalculada) => String(linhaCalculada.codigo)}
+      total={total}
+      rotuloTotal="Total"
+    />
+  );
+  const titulo = `Compra sobre Venda por ${rotuloNivel}`;
+
   return (
     <Card className="h-full min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icon path={mdiCubeOutline} size={0.9} className="text-primary" aria-hidden />
-          Compra sobre Venda por {rotuloNivel}
+          {titulo}
         </CardTitle>
         <div className="flex flex-wrap items-center gap-3">
-          <Segmented label="Nível" value={nivel} options={NIVEIS} onChange={setNivel} />
-          <label className="relative [[data-estreito]_&]:hidden">
-            <span className="sr-only">Buscar {rotuloNivel.toLowerCase()}</span>
-            <Icon
-              path={mdiMagnify}
-              size={0.75}
-              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              type="search"
-              value={busca}
-              onChange={(evento) => setBusca(evento.target.value)}
-              placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
-              className="h-9 w-52 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
-            />
-          </label>
+          {controles}
+          <VerTodos titulo={titulo} descricao="Compras e venda do período, com a variação e a situação de cada item." filtros={controles} desabilitado={isPending || isError} carregando={carregando}>
+            {tabela}
+          </VerTodos>
         </div>
       </CardHeader>
 
@@ -156,17 +193,7 @@ export function DepartamentosTable({ filtros }: { filtros: Filtros }) {
         ) : isError ? (
           <p className="py-10 text-center text-sm text-error">{error.message}</p>
         ) : (
-          <div
-            className="min-h-0 flex-1 overflow-auto rounded-xl border"
-          >
-            <DataTable
-              colunas={colunasDepartamentos(rotuloNivel)}
-              linhas={filtradas}
-              chave={(linhaCalculada) => String(linhaCalculada.codigo)}
-              total={total}
-              rotuloTotal="Total"
-            />
-          </div>
+          <div className="min-h-0 flex-1 overflow-auto rounded-xl border">{tabela}</div>
         )}
         {/* z-20: acima do cabeçalho fixo (sticky) da tabela. */}
         <LoadingOverlay ativo={carregando} className="z-20 rounded-b-2xl" />

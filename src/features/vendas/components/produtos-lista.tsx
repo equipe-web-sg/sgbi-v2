@@ -1,15 +1,14 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiArrowRight, mdiDownload } from "@mdi/js";
+import { mdiDownload } from "@mdi/js";
 import { Delta } from "@/components/kpi/kpi-card";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type Coluna } from "@/components/ui/data-table";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
+import { VerTodos } from "@/components/ui/ver-todos";
 import { baixarCsv } from "@/lib/csv";
 import { formatMoeda, formatPercentual } from "@/lib/format";
-import { VENDAS_CONFIG } from "../config";
 import type { ListaProdutos, ProdutoResumo } from "../types";
 
 /** Listas de variação mostram a Var. %; listas de margem mostram a margem. */
@@ -83,8 +82,6 @@ function Tabela({ produtos, lista, compacta }: { produtos: ProdutoResumo[]; list
       densidade="compacto"
       cabecalhoFixo={!compacta}
       vazio={null}
-      // Telas baixas (ex.: 1536 × 864): o card mostra uma linha a menos para caber sem rolar.
-      classeLinha={(_, __, indice) => (compacta && indice === 4 ? "[@media(max-height:900px)]:hidden" : "")}
     />
   );
 }
@@ -111,43 +108,37 @@ export function ProdutosLista({
       todos.map((produtoResumo) => [produtoResumo.codigo, produtoResumo.descricao, produtoResumo.departamento, produtoResumo.classe, produtoResumo.venda, produtoResumo.vendaAnterior, produtoResumo.variacao, produtoResumo.lucro, produtoResumo.margem]),
     );
 
+  const controles = (
+    <>
+      <span className="text-xs text-muted-foreground">{todos.length} produtos</span>
+      <button
+        type="button"
+        onClick={exportar}
+        disabled={!todos.length}
+        className="flex h-8 items-center gap-1.5 rounded-lg border bg-card px-2.5 text-xs font-medium text-foreground shadow-xs hover:border-primary/60 hover:text-primary disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Icon path={mdiDownload} size={0.65} aria-hidden />
+        Exportar
+      </button>
+    </>
+  );
+
   return (
     <Card className="@container min-w-0">
-      <Dialog>
-        <CardHeader className="flex-nowrap!">
-          <CardTitle className="min-w-0 truncate text-sm" title={descricao}>
-            {titulo}
-          </CardTitle>
-          <DialogTrigger
-            disabled={!todos.length}
-            className="flex shrink-0 items-center gap-1 rounded px-1 text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring disabled:invisible"
-          >
-            Ver todos
-            <Icon path={mdiArrowRight} size={0.55} aria-hidden />
-          </DialogTrigger>
-        </CardHeader>
-        <DialogContent titulo={titulo} descricao={descricao} className="max-w-3xl">
-          <div className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-4">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{todos.length} produtos</span>
-              <button
-                type="button"
-                onClick={exportar}
-                className="flex h-8 items-center gap-1.5 rounded-lg border bg-card px-2.5 text-xs font-medium text-foreground shadow-xs hover:border-primary/60 hover:text-primary"
-              >
-                <Icon path={mdiDownload} size={0.65} aria-hidden />
-                Exportar
-              </button>
-            </div>
-            <div className="@container min-h-0 flex-1 overflow-auto rounded-lg border">
-              <Tabela produtos={todos} lista={lista} />
-            </div>
+      <CardHeader className="flex-nowrap!">
+        <CardTitle className="min-w-0 truncate text-sm" title={descricao}>
+          {titulo}
+        </CardTitle>
+        <VerTodos titulo={titulo} descricao={descricao} filtros={controles} desabilitado={!todos.length} className="max-w-3xl">
+          <div className="@container">
+            <Tabela produtos={todos} lista={lista} />
           </div>
-        </DialogContent>
-      </Dialog>
-      <div className="relative min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-1.5" aria-busy={carregando}>
-        <div className="overflow-hidden rounded-lg border">
-          <Tabela produtos={todos.slice(0, VENDAS_CONFIG.linhasNoCard)} lista={lista} compacta />
+        </VerTodos>
+      </CardHeader>
+      {/* A tabela rola dentro do card: ao aumentar o card, aparecem mais produtos. */}
+      <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1.5" aria-busy={carregando}>
+        <div className="min-h-0 overflow-auto rounded-lg border">
+          <Tabela produtos={todos} lista={lista} compacta />
           {!carregando && !todos.length && (
             <p className="py-6 text-center text-xs text-muted-foreground">Nenhum produto no período.</p>
           )}

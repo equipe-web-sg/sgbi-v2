@@ -13,6 +13,4 @@ export const METAS_CONFIG = {
    * Até `okAte` p.p. abaixo da meta = Ok; até `atencaoAte` = Atenção; mais que isso = Crítico.
    */
   margem: { okAte: 0.5, atencaoAte: 2 },
-  /** Linhas dos cards "Departamentos em risco" e "Melhor desempenho" (o resto em "Ver todos"). */
-  linhasNoCard: 3,
 } as const;

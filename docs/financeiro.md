@@ -49,4 +49,4 @@ Detalhes técnicos:
 
 ## Layout personalizável (D43)
 
-A tela usa a grade personalizável, como o Painel Executivo (ver `docs/painel-executivo-poc.md`, seção 9): o lápis ao lado dos filtros liga a edição (arrastar, trocar de lugar, redimensionar pelas bordas e cantos, ocultar, restaurar o padrão). O layout padrão e os limites de cada card ficam em `src/features/financeiro/layout.ts` (Fluxo de Caixa) e `src/features/financeiro/layout-dfc.ts` (DFC).
+A tela usa a grade personalizável, como o Painel Executivo (ver `docs/painel-executivo-poc.md`, seção 9): o lápis ao lado dos filtros liga a edição (arrastar, trocar de lugar, redimensionar pelas bordas e cantos, ocultar, restaurar o padrão). A DFC e o card Saldo de Caixa por Conta (e os KPIs Saldo em Caixa Hoje e Dias de Cobertura) estão ocultos até haver fonte de caixa e saldo bancário (D53). O layout padrão e os limites de cada card ficam em `src/features/financeiro/layout.ts` (Fluxo de Caixa) e `src/features/financeiro/layout-dfc.ts` (DFC).
