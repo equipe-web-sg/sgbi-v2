@@ -10,11 +10,13 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Segmented } from "@/components/ui/segmented";
+import { VerTodos } from "@/components/ui/ver-todos";
 import { variacao } from "@/lib/calc";
 import { baixarCsv } from "@/lib/csv";
 import { formatMoeda, formatPercentual } from "@/lib/format";
 import { resumirMeta, type ResumoMeta } from "../compute";
 import { metasQueries } from "../queries";
+import { explicarStatusMargem, explicarStatusMeta } from "../textos";
 import type { FiltrosMetas, LinhaMetaNivel, Nivel, PeriodoMeta } from "../types";
 import { DO_PERIODO } from "./kpis-metas";
 import { ORDEM_MARGEM, ORDEM_STATUS, PONTOS_MARGEM, ROTULO_STATUS, StatusMargemBadge, StatusMetaBadge } from "./status";
@@ -96,7 +98,7 @@ function colunasAcompanhamento(rotuloNivel: string, metaDoPeriodo: string): Colu
       titulo: "Atingimento",
       subtitulo: "Situação",
       align: "left",
-      cell: (linhaAcompanhamento) => <StatusMetaBadge status={linhaAcompanhamento.resumo.status} />,
+      cell: (linhaAcompanhamento) => <StatusMetaBadge status={linhaAcompanhamento.resumo.status} explicacao={explicarStatusMeta(linhaAcompanhamento.resumo)} />,
       ordenar: (linhaAcompanhamento) => ORDEM_STATUS[linhaAcompanhamento.resumo.status],
     },
     {
@@ -136,7 +138,7 @@ function colunasAcompanhamento(rotuloNivel: string, metaDoPeriodo: string): Colu
       rotulo: "Situação da margem",
       align: "left",
       divisor: true,
-      cell: (linhaAcompanhamento) => <StatusMargemBadge status={linhaAcompanhamento.resumo.statusMargem} />,
+      cell: (linhaAcompanhamento) => <StatusMargemBadge status={linhaAcompanhamento.resumo.statusMargem} explicacao={explicarStatusMargem(linhaAcompanhamento.resumo)} />,
       ordenar: (linhaAcompanhamento) => ORDEM_MARGEM[linhaAcompanhamento.resumo.statusMargem],
     },
   ];
@@ -221,47 +223,84 @@ export function AcompanhamentoTable({
     );
   };
 
+  // Os controles da tabela são os mesmos no card e na janela "Ver todos" (o estado é do card).
+  const controles = (
+    <>
+      <Segmented
+        label="Nível"
+        value={nivel}
+        options={NIVEIS}
+        onChange={(novoNivel) => {
+          setNivel(novoNivel);
+          setAbertos(new Set());
+        }}
+      />
+      <label className="relative">
+        <span className="sr-only">Buscar {rotuloNivel.toLowerCase()}</span>
+        <Icon
+          path={mdiMagnify}
+          size={0.75}
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          type="search"
+          value={busca}
+          onChange={(evento) => setBusca(evento.target.value)}
+          placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
+          className="h-9 w-48 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={exportar}
+        disabled={!base.data}
+        className="flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-xs transition-colors hover:border-primary/60 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Icon path={mdiDownload} size={0.75} aria-hidden />
+        Exportar
+      </button>
+    </>
+  );
+  const tabela = (
+    <DataTable
+      colunas={colunasAcompanhamento(rotuloNivel, DO_PERIODO[aba.id])}
+      linhas={raiz}
+      chave={(linhaAcompanhamento, profundidade) => `${niveis[profundidade]}:${linhaAcompanhamento.codigo}`}
+      total={total}
+      rotuloTotal="Total"
+      arvore={{
+        abertas: abertos,
+        alternar,
+        expansivel: (profundidade) => profundidade < niveis.length - 1,
+        filhos: (linhaAcompanhamento, profundidade) => ({
+          linhas: linhasPorNivel[profundidade + 1].filter((filha) => filha.pai === linhaAcompanhamento.codigo),
+          carregando: carregando(consultas[profundidade + 1]),
+        }),
+        rotuloVazio: "Sem meta nem venda no nível de baixo.",
+        descricao: (linhaAcompanhamento) => linhaAcompanhamento.descricao,
+      }}
+    />
+  );
+  const titulo = `Acompanhamento das Metas por ${rotuloNivel} · ${aba.label}`;
+
   return (
     <Card className="h-full min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icon path={mdiTarget} size={0.9} className="text-primary" aria-hidden />
-          Acompanhamento das Metas por {rotuloNivel} · {aba.label}
+          {titulo}
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2">
-          <Segmented
-            label="Nível"
-            value={nivel}
-            options={NIVEIS}
-            onChange={(novoNivel) => {
-              setNivel(novoNivel);
-              setAbertos(new Set());
-            }}
-          />
-          <label className="relative">
-            <span className="sr-only">Buscar {rotuloNivel.toLowerCase()}</span>
-            <Icon
-              path={mdiMagnify}
-              size={0.75}
-              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              type="search"
-              value={busca}
-              onChange={(evento) => setBusca(evento.target.value)}
-              placeholder={`Buscar ${rotuloNivel.toLowerCase()}…`}
-              className="h-9 w-48 rounded-lg border bg-card pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:border-primary"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={exportar}
-            disabled={!base.data}
-            className="flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-xs transition-colors hover:border-primary/60 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+          {controles}
+          <VerTodos
+            titulo={titulo}
+            descricao="Meta, realizado, atingimento, projeção e margem de cada item. Use a seta da linha para abrir o nível de baixo."
+            filtros={controles}
+            desabilitado={!base.data}
+            carregando={carregando(base)}
           >
-            <Icon path={mdiDownload} size={0.75} aria-hidden />
-            Exportar
-          </button>
+            {tabela}
+          </VerTodos>
         </div>
       </CardHeader>
 
@@ -271,26 +310,7 @@ export function AcompanhamentoTable({
         ) : base.isError ? (
           <p className="py-10 text-center text-sm text-error">{base.error.message}</p>
         ) : (
-          <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
-            <DataTable
-              colunas={colunasAcompanhamento(rotuloNivel, DO_PERIODO[aba.id])}
-              linhas={raiz}
-              chave={(linhaAcompanhamento, profundidade) => `${niveis[profundidade]}:${linhaAcompanhamento.codigo}`}
-              total={total}
-              rotuloTotal="Total"
-              arvore={{
-                abertas: abertos,
-                alternar,
-                expansivel: (profundidade) => profundidade < niveis.length - 1,
-                filhos: (linhaAcompanhamento, profundidade) => ({
-                  linhas: linhasPorNivel[profundidade + 1].filter((filha) => filha.pai === linhaAcompanhamento.codigo),
-                  carregando: carregando(consultas[profundidade + 1]),
-                }),
-                rotuloVazio: "Sem meta nem venda no nível de baixo.",
-                descricao: (linhaAcompanhamento) => linhaAcompanhamento.descricao,
-              }}
-            />
-          </div>
+          <div className="min-h-0 flex-1 overflow-auto rounded-xl border">{tabela}</div>
         )}
         {/* z-20: acima do cabeçalho fixo (sticky) da tabela. */}
         <LoadingOverlay ativo={carregando(base)} className="z-20 rounded-b-2xl" />

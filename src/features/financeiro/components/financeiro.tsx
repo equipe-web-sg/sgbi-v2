@@ -21,7 +21,7 @@ import { financeiroQueries } from "../queries";
 import type { FiltrosFinanceiro } from "../types";
 import { CategoriasCard } from "./categorias-card";
 import { CompromissosCard } from "./compromissos-card";
-import { EvolucaoMensalChart, IndicadoresCard, SaldoContasCard } from "./cards-inferiores";
+import { EvolucaoMensalChart, IndicadoresCard } from "./cards-inferiores";
 import { EvolucaoCaixaChart } from "./evolucao-caixa-chart";
 import { FluxoPrevistoTable } from "./fluxo-previsto-table";
 import { kpisDoFinanceiro } from "./kpis-financeiro";
@@ -107,7 +107,7 @@ export function Financeiro() {
     nivel: "atencao",
     titulo: "Fluxo de caixa parcial: faltam fontes de dados",
     detalhes: [
-      "Saldos bancários e contas não estão no banco do SGBI: saldo em caixa, dias de cobertura e saldo por conta ficam indisponíveis.",
+      "Saldos bancários e contas não estão no banco do SGBI: saldo em caixa, dias de cobertura e saldo por conta ficam ocultos até haver a fonte (P42).",
       "Vendas em dinheiro e Pix só existem na API do VX: as entradas trazem cartões (pela liquidação) e contas a receber.",
     ],
   });
@@ -212,7 +212,7 @@ export function Financeiro() {
                 },
                 carregando: pendente,
               })}
-              maxColunas={6}
+              maxColunas={4}
             />
           ),
           "evolucao-caixa": (
@@ -239,7 +239,7 @@ export function Financeiro() {
               carregando={carregando(compromissos)}
             />
           ),
-          "saldo-contas": <SaldoContasCard />,
+          // "saldo-contas": <SaldoContasCard />, // oculto até existir saldo bancário (P42)
           "evolucao-mensal": (
             <EvolucaoMensalChart
               pontos={porMes(

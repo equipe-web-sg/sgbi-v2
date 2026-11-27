@@ -53,3 +53,16 @@ export function InfoTooltip({ texto, size = 0.6 }: { texto: string; size?: numbe
     </Tooltip>
   );
 }
+
+/** Balão com uma frase por linha (a primeira em destaque), para explicar o valor de uma célula. */
+export function LinhasTooltip({ linhas }: { linhas: string[] }) {
+  return (
+    <div className="flex flex-col gap-1">
+      {linhas.map((linha, indice) => (
+        <p key={linha} className={indice === 0 ? "font-semibold" : "text-muted-foreground"}>
+          {linha}
+        </p>
+      ))}
+    </div>
+  );
+}

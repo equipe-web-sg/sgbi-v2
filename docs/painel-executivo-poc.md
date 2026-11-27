@@ -151,7 +151,7 @@ Comportamentos:
 
 Limitações conhecidas:
 
-- Descontos: card "Em definição" (decisão 6).
+- Descontos: card "Em definição" (decisão 6), oculto do layout padrão (D53) até o cálculo ser definido.
 - A lista de filiais vem da analise gerencial; a filial 3 (só no `parfil`) não aparece.
 - A tabela troca de nível pelas abas, mas ainda não expande um departamento em seus grupos.
 - Não há dados do dia (`API_VIEW`); a tela usa só dias fechados.

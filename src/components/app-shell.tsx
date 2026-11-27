@@ -1,7 +1,7 @@
 "use client";
 
 import Icon from "@mdi/react";
-import { mdiBullseyeArrow, mdiLockOutline, mdiCartOutline, mdiCashMultiple, mdiChartWaterfall, mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
+import { mdiBullseyeArrow, mdiLockOutline, mdiCartOutline, mdiCashMultiple, mdiClose, mdiMenu, mdiMenuOpen, mdiViewDashboardOutline } from "@mdi/js";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,7 +18,8 @@ const NAV: { href: string; label: string; icon: string; tela: Tela }[] = [
   { href: "/metas", label: "Metas", icon: mdiBullseyeArrow, tela: "metas" },
   { href: "/vendas", label: "Vendas", icon: mdiCartOutline, tela: "vendas" },
   { href: "/financeiro", label: "Fluxo de Caixa", icon: mdiCashMultiple, tela: "financeiro" },
-  { href: "/financeiro/dfc", label: "DFC", icon: mdiChartWaterfall, tela: "dfc" },
+  // DFC oculta até existir fonte de caixa (P51): a rota responde 404 e o código segue em src/features/financeiro.
+  // { href: "/financeiro/dfc", label: "DFC", icon: mdiChartWaterfall, tela: "dfc" },
 ];
 
 const iconButton =

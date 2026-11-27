@@ -8,9 +8,8 @@ export const VENDAS_CONFIG = {
    * No BI antigo vêm do login do VX (`curvaABC`), por cliente.
    */
   abc: { A: 70, B: 20 },
-  /** Produtos de cada lista ("Ver todos" mostra todos; o card mostra os primeiros). */
+  /** Produtos de cada lista (o card mostra quantos couberem na altura dele e rola; "Ver todos" abre a lista inteira). */
   tamanhoLista: 50,
-  linhasNoCard: 5,
   /** Departamentos no gráfico de barras; o resto vira "Outros". */
   departamentosNoGrafico: 7,
 } as const;

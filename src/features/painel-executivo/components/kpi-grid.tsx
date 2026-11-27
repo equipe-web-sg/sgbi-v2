@@ -244,10 +244,10 @@ export function kpisDoPainel({
             meta && (
               <>
                 <span className="font-semibold text-foreground tabular-nums">{formatPercentual(atingido)} da meta</span>
-                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-secondary">
+                <span className="whitespace-nowrap tabular-nums">· Meta: {formatMoeda(meta.metaPeriodo)}</span>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(atingido, 100)}%` }} />
                 </div>
-                <span className="tabular-nums">Meta: {formatMoeda(meta.metaPeriodo)}</span>
               </>
             )
           }

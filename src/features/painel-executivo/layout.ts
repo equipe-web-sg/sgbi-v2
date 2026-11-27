@@ -5,9 +5,10 @@ import type { Layout, Limites } from "@/lib/layout";
  * Layout padrão do Painel Executivo (D43): grade de 12 colunas; `altura` em
  * unidades de linha (a unidade é calculada para o padrão ocupar a tela sem rolar).
  * `coluna`/`linha` = coluna e linha do canto superior esquerdo. Ao mudar ids ou a estrutura, suba a `versao` (o salvo antigo é descartado).
+ * O KPI `descontos` está fora do padrão (sem cálculo definido, P-descontos): o código segue em `kpi-grid.tsx`, mas ele não aparece nem na lista de ocultos.
  */
 export const LAYOUT_PADRAO: Layout = {
-  versao: 4,
+  versao: 5,
   itens: [
     { id: "kpis", coluna: 0, linha: 0, largura: 12, altura: 5, visivel: true },
     { id: "evolucao-venda", coluna: 0, linha: 5, largura: 4, altura: 6, visivel: true },
@@ -27,8 +28,8 @@ export const LAYOUT_PADRAO: Layout = {
       "ticket-medio",
       "compra-sobre-venda",
       "cancelamentos",
-      "descontos",
-    ].map((id) => ({ id, coluna: 0, linha: 0, largura: 1, altura: 1, visivel: true })),
+      // "descontos": oculto até o cálculo ser definido (ver comentário acima).
+    ].map((id) => ({ id, coluna: 0, linha: 0, largura: id === "venda-vs-meta" ? 2 : 1, altura: 1, visivel: true })),
   },
 };
 

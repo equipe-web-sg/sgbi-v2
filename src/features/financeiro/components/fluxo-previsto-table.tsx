@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type Coluna } from "@/components/ui/data-table";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Segmented } from "@/components/ui/segmented";
+import { VerTodos } from "@/components/ui/ver-todos";
 import { baixarCsv } from "@/lib/csv";
 import { parseIso } from "@/lib/date";
 import { formatDiaMes, formatMesAno, formatMoeda } from "@/lib/format";
@@ -100,29 +101,47 @@ export function FluxoPrevistoTable({
       linhas.map((linhaPrevista) => [rotulo(linhaPrevista, granularidade), linhaPrevista.entradas, linhaPrevista.saidas, linhaPrevista.saldo, linhaPrevista.acumulado, STATUS[linhaPrevista.status].label]),
     );
 
+  // Os controles da tabela são os mesmos no card e na janela "Ver todos" (o estado é do card).
+  const controles = (
+    <>
+      <Segmented label="Agrupamento" value={granularidade} options={GRANULARIDADES} onChange={setGranularidade} />
+      <button
+        type="button"
+        onClick={exportar}
+        disabled={!linhas.length}
+        className="flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-xs transition-colors hover:border-primary/60 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Icon path={mdiDownload} size={0.75} aria-hidden />
+        Exportar
+      </button>
+    </>
+  );
+  const tabela = <DataTable colunas={colunasFluxo(granularidade)} linhas={linhas} chave={(linhaPrevista) => linhaPrevista.chave} />;
+  const titulo = `Fluxo de Caixa Previsto · Próximos ${dias} dias`;
+
   return (
     <Card className="h-full min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icon path={mdiCalendarArrowRight} size={0.9} className="text-primary" aria-hidden />
-          Fluxo de Caixa Previsto · Próximos {dias} dias
+          {titulo}
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2">
-          <Segmented label="Agrupamento" value={granularidade} options={GRANULARIDADES} onChange={setGranularidade} />
-          <button
-            type="button"
-            onClick={exportar}
-            disabled={!linhas.length}
-            className="flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-xs transition-colors hover:border-primary/60 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+          {controles}
+          <VerTodos
+            titulo={titulo}
+            descricao="Entradas e saídas previstas (títulos em aberto e cartões a liquidar), com o acumulado a partir da referência."
+            filtros={controles}
+            desabilitado={!linhas.length}
+            carregando={carregando}
           >
-            <Icon path={mdiDownload} size={0.75} aria-hidden />
-            Exportar
-          </button>
+            {tabela}
+          </VerTodos>
         </div>
       </CardHeader>
       <div className="relative flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2" aria-busy={carregando}>
         <div className="min-h-0 flex-1 overflow-auto rounded-xl border">
-          <DataTable colunas={colunasFluxo(granularidade)} linhas={linhas} chave={(linhaPrevista) => linhaPrevista.chave} />
+          {tabela}
         </div>
         <LoadingOverlay ativo={carregando} className="z-20 rounded-b-2xl" />
       </div>
